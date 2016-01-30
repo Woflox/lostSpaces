@@ -123,11 +123,9 @@ method update* (self: Entity, dt: float) =
   self.updateShapeTransforms()
 
 proc renderLine* (self: Entity) =
-  if self.onScreen:
-    for shape in self.shapes:
-        shape.renderLine()
+  for shape in self.shapes:
+    shape.renderLine()
 
 proc renderSolid* (self: Entity) =
-  if self.onScreen:
-    for shape in self.shapes:
-        shape.renderSolid()
+  for shape in self.shapes:
+    shape.renderSolid()

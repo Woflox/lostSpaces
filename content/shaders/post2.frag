@@ -8,7 +8,7 @@ uniform float invCorrectedGamma;
 
 const float pi2 = 3.1415926536 * 2.0;
 const int numSamples = 6;
-const float contrastBoost = 4.0;
+const float contrastBoost = 2.0;
 const float gamma = 2.2;
 
 in vec2 texCoords;

@@ -18,9 +18,23 @@ proc generate* () =
   clearEntities()
   var camera = newCamera(vec2(0,0))
   for i in 0..10:
-    addEntity(newLineObject(random(0, numTilesX), random(0, numTilesY), random(0, 7), random(0, 2)))
-  for i in 0..pallette.high:
-    pallette[i] = randomColor()
+    addEntity(newLineObject(random(0, numTilesX), random(0, numTilesY), random(0, 7), random(0, 1)))
+
+  var mainColor1 = color(uniformRandom(), uniformRandom(), uniformRandom())
+  var fullColorIndex = random(0, 2)
+  var halfColorIndex = (fullColorIndex + random(0, 1)) mod 3
+  mainColor1[fullColorIndex] = 1
+  mainColor1[halfColorIndex] = mainColor1[halfColorIndex] * 0.5
+
+  var mainColor2 = color(uniformRandom(), uniformRandom(), uniformRandom())
+  halfColorIndex = fullColorIndex
+  fullColorIndex = (halfColorIndex + random(0, 10)) mod 3
+  mainColor2[fullColorIndex] = 1
+  mainColor2[halfColorIndex] = mainColor2[halfColorIndex] * 0.5
+
+  pallette[0] = mainColor1
+  pallette[1] = mainColor2
+  pallette[2] = randomColor() * 0.0625
 
 playSound(newAmbientNode(), -4.0, 0.0)
 
@@ -45,12 +59,13 @@ proc update* (dt: float) =
 
 proc render* () =
   glPushMatrix()
-  mainCamera.applyTransform()
+  let scale = 1 / (numTilesY * tileSize)
+  glScaled(scale, scale, 1)
+
   glEnable (GL_BLEND);
   glBlendFunc (GL_ONE, GL_ONE_MINUS_SRC_COLOR);
   glBegin(GL_TRIANGLES)
   for entity in entities:
-    entity.onScreen = mainCamera.isOnScreen(entity.boundingBox)
     entity.renderSolid()
   glEnd()
   glBegin(GL_LINES)

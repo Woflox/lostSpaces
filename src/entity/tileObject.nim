@@ -27,17 +27,17 @@ const solidRelativeVertices =
   [vec2(-0.5, 0.5), vec2(0.5, -0.5), vec2(1.5, -0.5), vec2(-0.5, 1.5)]]
 
 proc getTilePos(x,y: int): Vector2 =
-  result = vec2(float(x) * tileSize, float(y) * tileSize) + tileOffset
+  result = vec2((float(x) - numTilesX * 0.5) * tileSize, (float(y) - numTilesY * 0.5) * tileSize)
 
 type
   TileObject = ref object of Entity
     x, y: int
   LineObject = ref object of TileObject
-    tileRotation: int
-    palletteIndex: int
+    tileRotation, palletteIndex: int
+    t: float
 
-proc newLineObject* (x, y, lineRotation, lineColor: int): LineObject =
-  result = LineObject(drawable: true)
+proc newLineObject* (x, y, tileRotation, palletteIndex: int): LineObject =
+  result = LineObject(drawable: true, x:x, y:y, tileRotation: tileRotation, palletteIndex: palletteIndex)
 
   let lineShape = createShape(vertices = @[vec2(0,0),vec2(0,0)],
                                 drawStyle = DrawStyle.line)
@@ -47,15 +47,23 @@ proc newLineObject* (x, y, lineRotation, lineColor: int): LineObject =
   result.init()
 
 method update(self: LineObject, dt: float) =
+  self.t += dt
+
+  if self.t > 0.5:
+    self.t -= 0.5
+    self.tileRotation = (self.tileRotation + 1) mod 8
+
   let tilePos = getTilePos(self.x, self.y)
   self.shapes[0].vertices[0] = lineRelativeVertices[self.tileRotation][0] * tileSize + tilePos
   self.shapes[0].vertices[1] = lineRelativeVertices[self.tileRotation][1] * tileSize + tilePos
-  self.shapes[1].vertices[0] = lineRelativeVertices[self.tileRotation][0] * tileSize + tilePos
-  self.shapes[1].vertices[1] = lineRelativeVertices[self.tileRotation][1] * tileSize + tilePos
-  self.shapes[1].vertices[2] = lineRelativeVertices[self.tileRotation][2] * tileSize + tilePos
-  self.shapes[1].vertices[3] = lineRelativeVertices[self.tileRotation][3] * tileSize + tilePos
+  self.shapes[1].vertices[0] = solidRelativeVertices[self.tileRotation][0] * tileSize + tilePos
+  self.shapes[1].vertices[1] = solidRelativeVertices[self.tileRotation][1] * tileSize + tilePos
+  self.shapes[1].vertices[2] = solidRelativeVertices[self.tileRotation][2] * tileSize + tilePos
+  self.shapes[1].vertices[3] = solidRelativeVertices[self.tileRotation][3] * tileSize + tilePos
 
   let color = pallette[self.palletteIndex]
   self.shapes[0].lineColor = color
-  self.shapes[1].fillColor = color * 0.25
+  self.shapes[1].fillColor = color * 0.125
+
+  echo self.shapes[1].fillColor
 

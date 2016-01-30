@@ -24,7 +24,7 @@ var frameBuffer: FrameBuffer
 var postFrameBuffer: FrameBuffer
 var t: float
 
-const maxFrameBufferHeight = 580
+const maxFrameBufferHeight = 400
 const targetScanLineFrequency = 0.5
 
 proc init* =
@@ -66,6 +66,7 @@ proc render* =
   #render scene
   glBindFrameBuffer(GL_FRAMEBUFFER, frameBuffer.fbo)
   glViewport(0, 0, GLint(frameBuffer.width), GLint(frameBuffer.height))
+  glClearColor(pallette[2].r, pallette[2].g, pallette[2].b, 1.0)
   glClear(GL_COLOR_BUFFER_BIT)
   glMatrixMode(GL_MODELVIEW)
   glLineWidth(1)
