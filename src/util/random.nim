@@ -44,6 +44,10 @@ proc expRandom* (self: var MersenneTwister, frequency: float) : float =
 proc relativeRandom* (self: var MersenneTwister, median: float, maxMultiplier: float) : float =
   median * (pow(maxMultiplier, self.random(-1.0, 1.0)))
 
+proc randomColor* (self: var MersenneTwister): Color =
+  result = color(self.uniformRandom(),self.uniformRandom(),self.uniformRandom())
+  result[self.random(0, 2)] = 1
+
 proc seed* (seed: int) =
   mt = newMersenneTwister(seed)
 
@@ -79,3 +83,6 @@ proc expRandom* (frequency: float) : float =
 
 proc relativeRandom* (median: float, maxMultiplier: float) : float =
   mt.relativeRandom(median, maxMultiplier)
+
+proc randomColor* () : Color =
+  mt.randomColor()

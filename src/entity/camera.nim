@@ -28,7 +28,6 @@ type
 
 const
   smoothing = 0.25
-  targetMoveSpeed = playerMoveSpeed * 2.5
   velocityOffsetCoefficient = 0.75
   rotationSpeed = 1.5
   rotationSmoothing = 0.25

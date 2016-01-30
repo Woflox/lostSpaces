@@ -8,21 +8,19 @@ import ../audio/audio
 import ../audio/ambient
 import ../ui/text
 import ../ui/uiobject
+import ../entity/tileObject
+import ../globals/globals
 from ../input/input import nil
 from ../entity/camera import nil
 import math
 
-type
-  tileType* {.pure.} = enum
-
-  screen = object
-    seq[
-
-
-
 proc generate* () =
   clearEntities()
   var camera = newCamera(vec2(0,0))
+  for i in 0..10:
+    addEntity(newLineObject(random(0, numTilesX), random(0, numTilesY), random(0, 7), random(0, 2)))
+  for i in 0..pallette.high:
+    pallette[i] = randomColor()
 
 playSound(newAmbientNode(), -4.0, 0.0)
 

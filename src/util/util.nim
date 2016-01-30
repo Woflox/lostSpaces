@@ -189,6 +189,9 @@ proc angleFromMatrix*(m: Matrix2x2): float =
 proc color*(r, g, b: float, a = 1.0): Color =
   Color(r:r, g:g, b:b, a:a)
 
+proc `*`* (color: Color, f: float): Color =
+  color(color.r * f, color.g * f, color.b * f)
+
 proc glMatrix*(self: Matrix2x2): array[16, float] =
   [self[0][0], self[1][0], 0, 0,
    self[0][1], self[1][1], 0, 0,
