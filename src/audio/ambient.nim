@@ -5,34 +5,71 @@ import ../util/random
 import ../util/util
 
 type
-  AmbientNodeObj = object of AudioNodeObj
+  ChordNodeObj = object of AudioNodeObj
     t: float
-  AmbientNode* = ptr AmbientNodeObj
+    freqA: float
+    freqB: float
+    fadingIn: bool
+    fadeTime: float
+    timeFaded: float
+  ChordNode* = ptr ChordNodeObj
 
 const
   noiseFrequency = 0.5
   noiseOctaves = 3
 
-proc newAmbientNode*(): AmbientNode =
-  result = createShared(AmbientNodeObj)
-  result[] = AmbientNodeObj()
+const frequencies = [329.63, 392.00, 440.00, 493.88, 587.33]
 
-method updateOutputs*(self: AmbientNode, dt: float) =
-  var output = 0.0
-  let noiseVal = (fractalNoise(self.t * noiseFrequency, noiseOctaves) + 1) / 2
-  let noiseVal2 = (fractalNoise((self.t + 100) / noiseFrequency, noiseOctaves) + 1) / 2
-  output = ((self.t * 40) mod 1.0) * 2 - 1
-  output *= lerp(1.0, uniformRandom(), noiseVal)
-  output = lerp(output*0.5, fractalNoise(self.t * 30, 30), noiseVal2)
+proc getFadeTime: float =
+  relativeRandom(6, 2)
 
-  self.output[0] = output
-  self.output[1] = output
+proc newChordNode*(): ChordNode =
+  result = createShared(ChordNodeObj)
+  result[] = ChordNodeObj()
+  result.fadingIn = true
+  result.fadeTime = getFadeTime()
+  result.freqA = frequencies[random(0,4)]
+  result.freqB = frequencies[random(0,4)]
+  while result.freqB == result.freqA:
+    result.freqB = frequencies[random(0,4)]
 
-  if (self.t * 79.9) mod 1.0 > 0.5:
-    self.output[0] = 0
-    self.output[1] *= 0.5
-  if (self.t * 40.25) mod 1.0 > 0.5:
-    self.output[1] = 0
-    self.output[0] *= 0.5
+proc triangle(t: float, freq: float): float =
+  result = ((t * freq) mod 1.0) * 2.0 - 1.0
+  result = abs(result) * 2.0 - 1.0
 
-  self.t += dt
+proc sawTooth(t: float, freq: float): float =
+  result = ((t * freq) mod 1.0) * 2.0 - 1.0
+  result = abs(result) * 2.0 - 1.0
+
+proc getOutput(t: float, freqA: float, freqB: float): float =
+  result = sawTooth(t, freqA) + triangle(t, freqA) + sawTooth(t, freqB) + triangle(t, freqB)
+  result *= 0.25
+
+method updateOutputs*(self: ChordNode, dt: float) =
+  const chorusAmount = 0.025
+  const chorusFrequency = 0.1
+  const nf = 300
+  let noiseVal1 = (fractalNoise(self.t * chorusFrequency + 1000, noiseOctaves) + 1.0) / 2.0
+  let noiseVal2 = (fractalNoise(self.t * chorusFrequency + 2000.0, noiseOctaves) + 1.0) / 2.0
+
+  if self.t > 2:
+    self.timeFaded += dt
+
+  if self.timeFaded > self.fadeTime:
+    self.fadeTime = getFadeTime()
+    self.fadingIn = not self.fadingIn
+    self.timeFaded = 0
+    if self.fadingIn:
+      self.freqA = frequencies[random(0,4)]
+      self.freqB = frequencies[random(0,4)]
+      while self.freqB == self.freqA:
+        self.freqB = frequencies[random(0,4)]
+
+  var volume = self.timeFaded / self.fadeTime
+  if not self.fadingIn:
+    volume = 1 - volume
+
+  self.output[0] = volume * getOutput(self.t + noiseVal1 * chorusAmount, self.freqA, self.freqB)
+  self.output[1] = volume * getOutput(self.t + noiseVal2 * chorusAmount, self.freqA, self.freqB,)
+
+  self.t += dt;

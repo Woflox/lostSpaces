@@ -9,7 +9,7 @@ from input/input import nil
 from world/world import nil
 from render/renderer import nil
 
-const fullScreen = false
+const fullScreen = true
 
 var windowFlags = SDL_WINDOW_OPENGL or SDL_WINDOW_RESIZABLE
 if fullScreen:

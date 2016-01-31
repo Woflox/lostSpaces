@@ -218,6 +218,10 @@ proc startExplore* (number: int) =
     currentLevel = levels[number]
     loadScreen(-1)
 
+proc playMusic() =
+  playSound(newChordNode(), -4.0, -0.3)
+  playSound(newChordNode(), -4.0, 0.3)
+
 proc generate* () =
   clearEntities()
   var camera = newCamera(vec2(0,0))
@@ -227,13 +231,8 @@ proc generate* () =
     levels.add(unserializeLevel(levelNum))
     levelNum += 1
   startBuildLevel(levelNum)
-  #startExplore(levelNum-1)
-
-#playSound(newAmbientNode(), -4.0, 0.0)
-
 
 proc updateTextEntry(dt: float) =
-
   if talkProgress >= 1.0:
     if input.enteredText == "\b":
       if poemTextEntered.len > 0:
@@ -256,6 +255,7 @@ proc updateTextEntry(dt: float) =
 proc finishBuildLevel() =
   currentLevel.serialize()
   startExplore(currentLevel.number)
+  playMusic()
 
 proc updateDrawing(dt: float) =
   if input.buttonPressed(input.rotateLeft):
