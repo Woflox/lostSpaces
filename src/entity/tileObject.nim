@@ -46,12 +46,11 @@ proc newLineObject* (x, y, tileRotation, palletteIndex: int): LineObject =
                                 drawStyle = DrawStyle.line)
   let solidShape = createShape(vertices = @[vec2(0,0),vec2(0,0),vec2(0,0),vec2(0,0)],
                                drawStyle = DrawStyle.solid)
-  let mirrorLineShape =  createShape(vertices = @[vec2(0,0),vec2(0,0)],
-                                drawStyle = DrawStyle.line)
-  let mirrorSolidShape = createShape(vertices = @[vec2(0,0),vec2(0,0),vec2(0,0),vec2(0,0)],
-                               drawStyle = DrawStyle.solid)
-  result.shapes = @[lineShape, solidShape, mirrorLineShape, mirrorSolidShape]
+  result.shapes = @[lineShape, solidShape]
   result.init()
+
+proc newLineObject* (): LineObject =
+  result = LineObject()
 
 method update(self: LineObject, dt: float) =
 
@@ -63,17 +62,9 @@ method update(self: LineObject, dt: float) =
   self.shapes[1].vertices[2] = solidRelativeVertices[self.tileRotation][2] * tileSize + tilePos
   self.shapes[1].vertices[3] = solidRelativeVertices[self.tileRotation][3] * tileSize + tilePos
 
-  for i in 0..1:
-    self.shapes[2].vertices[i] = vec2(-self.shapes[0].vertices[i].x, self.shapes[0].vertices[i].y)
-  for i in 0..3:
-    self.shapes[3].vertices[i] = vec2(-self.shapes[1].vertices[i].x, self.shapes[1].vertices[i].y)
-
-
   let color = pallette[self.palletteIndex]
   self.shapes[0].lineColor = color
   self.shapes[1].fillColor = color * 0.125
-  self.shapes[2].lineColor = color
-  self.shapes[3].fillColor = color * 0.125
 
 
 proc newLineGroup* (tiles: seq[LineObject]): LineGroup =

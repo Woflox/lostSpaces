@@ -5,6 +5,8 @@ import ../util/util
 import ../util/random
 import ../geometry/shape
 import ../audio/audio
+import ../audio/voice
+import ../audio/prose
 import ../audio/ambient
 import ../ui/text
 import ../ui/uiobject
@@ -15,6 +17,7 @@ from ../input/input import nil
 from ../entity/camera import nil
 import math
 import strutils
+import os
 
 var lineGroup = newLineGroup(@[])
 
@@ -23,7 +26,6 @@ type
     poemLine: string
     tiles: seq[LineObject]
   Level = ref object
-    pallette: array[0..2, Color]
     number: int
     screens: seq[LevelScreen]
 
@@ -33,13 +35,8 @@ levels = @[]
 var currentLevel: Level
 var currentLevelScreen = 0
 
-
-proc newLevelScreen(): LevelScreen =
-  LevelScreen(poemLine: "", tiles: @[])
-
-proc generateLevel* (number: int): Level =
-  result = Level(number: number, screens: @[])
-  seed(number * 1000)
+proc setPallette(levelNum: int) =
+  seed(levelNum * 1000)
 
   var mainColor1 = color(uniformRandom(), uniformRandom(), uniformRandom())
   var fullColorIndex = random(0, 2)
@@ -53,18 +50,59 @@ proc generateLevel* (number: int): Level =
   mainColor2[fullColorIndex] = 1
   mainColor2[halfColorIndex] = mainColor2[halfColorIndex] * 0.5
 
-  result.pallette[0] = mainColor1
-  result.pallette[1] = mainColor2
-  result.pallette[2] = randomColor() * 0.0625
+  pallette[0] = mainColor1
+  pallette[1] = mainColor2
+  pallette[2] = randomColor() * 0.0625
+
+
+proc newLevelScreen(): LevelScreen =
+  LevelScreen(poemLine: "", tiles: @[])
+
+proc generateLevel* (number: int): Level =
+  result = Level(number: number, screens: @[])
+  seed(number * 1000)
 
   for i in 0..numLevelScreens-1:
     if i mod 2 == 0:
       if number > 0:
         result.screens.add(levels[random(0, number-1)].screens[i+1])
       else:
-        result.screens.add(newLevelScreen())
+        var screen = newLevelScreen()
+        for i in 0..<16:
+          let obj = newLineObject(random(0, numTilesX), random(0, numTilesY), random(0, 7), random(0, 1))
+          screen.tiles.add(obj)
+        screen.poemLine = getProse()
+        result.screens.add(screen)
     else:
       result.screens.add(newLevelScreen())
+
+proc serialize(self: Level) =
+  var file = open($(self.number) & ".lvl", fmWrite)
+  for screen in self.screens:
+    file.writeln(screen.poemLine)
+    for tile in screen.tiles:
+      file.writeln(tile.x)
+      file.writeln(tile.y)
+      file.writeln(tile.tileRotation)
+      file.writeln(tile.palletteIndex)
+
+proc unserializeLevel(number: int): Level =
+  result = Level(number: number, screens: @[])
+
+  var file = open($(number) & ".lvl")
+
+  for i in 0..<8:
+    var screen = newLevelScreen()
+    screen.poemLine = file.readline()
+    for j in 0..<16:
+      var lineObject = newLineObject()
+      lineObject.x = file.readline().parseInt()
+      lineObject.y = file.readline().parseInt()
+      lineObject.tileRotation = file.readline().parseInt()
+      lineObject.palletteIndex = file.readline().parseInt()
+      screen.tiles.add(lineObject)
+    result.screens.add(screen)
+
 
 proc setGameState(st: GameState) =
   gameState = st
@@ -79,7 +117,9 @@ proc setGameState(st: GameState) =
 
 proc startTextEntry* =
   setGameState(GameState.textEntry)
-  currentPoem.add(currentLevel.screens[currentLevelScreen].poemLine)
+  let previousLine = currentLevel.screens[currentLevelScreen].poemLine
+  currentPoem.add(previousLine)
+  say(previousLine)
   poemTextEntered = ""
   inc currentLevelScreen
 
@@ -109,7 +149,7 @@ proc startDrawing* =
 
 proc startBuildLevel* (number: int) =
   currentLevel = generateLevel(number)
-  pallette = currentLevel.pallette
+  setPallette(number)
   levels.add(currentLevel)
   currentPoem = @[]
   startTextEntry()
@@ -118,7 +158,11 @@ proc generate* () =
   clearEntities()
   var camera = newCamera(vec2(0,0))
 
-  startBuildLevel(0)
+  var levelNum = 0
+  while fileExists($levelNum & ".lvl"):
+    levels.add(unserializeLevel(levelNum))
+    levelNum += 1
+  startBuildLevel(levelNum)
 
 #playSound(newAmbientNode(), -4.0, 0.0)
 
@@ -133,6 +177,9 @@ proc updateTextEntry(dt: float) =
     currentLevel.screens[currentLevelScreen].poemLine = poemTextEntered
     currentPoem.add(poemTextEntered)
     startDrawing()
+
+proc finishBuildLevel() =
+  currentLevel.serialize()
 
 proc updateDrawing(dr: float) =
   if input.buttonPressed(input.rotateLeft):
@@ -150,7 +197,15 @@ proc updateDrawing(dr: float) =
   if input.buttonPressed(input.down):
     lineGroup.translate(0, -1)
   if input.buttonPressed(input.place):
-    startNewLineGroup()
+    if currentLevel.screens[currentLevelScreen].tiles.len >= 16:
+      if currentLevelScreen >= 7:
+        finishBuildLevel()
+      else:
+        inc currentLevelScreen
+        clearEntities()
+        startTextEntry()
+    else:
+      startNewLineGroup()
 
 
 proc update* (dt: float) =
