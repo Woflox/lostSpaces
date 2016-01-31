@@ -20,9 +20,10 @@ let writingScreen* = newScreen()
 let drawingScreen* = newScreen()
 let exploringScreen* = newScreen()
 
-var writingScreenLabel1 = newTextObject("", hudTextStyle, vec2(0, 0.5), HAlign.center, VAlign.center)
-var writingScreenLabel2 = newTextObject("", hudTextStyle, vec2(0, 0), HAlign.center, VAlign.center)
-var writingScreenLabel3 = newTextObject("", hudTextStyle, vec2(0, 0.75), HAlign.center, VAlign.bottom)
+var writingScreenLabel1 = newTextObject("", hudTextStyle, vec2(0, 1.0), HAlign.center, VAlign.center)
+var writingScreenLabel2 = newTextObject("", hudTextStyle, vec2(0, 0.5), HAlign.center, VAlign.center)
+var writingScreenLabel3 = newTextObject("", hudTextStyle, vec2(0, 0), HAlign.center, VAlign.center)
+var writingScreenLabel4 = newTextObject("", hudTextStyle, vec2(0, 0.75), HAlign.center, VAlign.bottom)
 
 var drawingScreenLabel1 = newTextObject("", hudTextStyle, vec2(0, -0.5), HAlign.center, VAlign.top)
 var drawingScreenLabel2 = newTextObject("", hudTextStyle, vec2(0, 0.75), HAlign.center, VAlign.bottom)
@@ -34,6 +35,7 @@ var exploringScreenLabel = newTextObject("", hudTextStyle, vec2(0, 0.5), HAlign.
 writingScreen.innerELements.add(writingScreenLabel1)
 writingScreen.innerELements.add(writingScreenLabel2)
 writingScreen.innerELements.add(writingScreenLabel3)
+writingScreen.innerELements.add(writingScreenLabel4)
 
 drawingScreen.innerElements.add(drawingScreenLabel1)
 drawingScreen.innerElements.add(drawingScreenLabel2)
@@ -44,24 +46,20 @@ exploringScreen.innerElements.add(exploringScreenLabel)
 var currentScreen* = writingScreen
 
 method update* (self: Screen, dt: float) =
-  self.bounds = boundingBox(vec2(-baseScreenHeight * screenAspectRatio / 2, -baseScreenHeight / 2),
-                            vec2(baseScreenHeight * screenAspectRatio / 2, baseScreenHeight / 2))
-  for element in self.innerElements:
-    element.updateLayout(self.bounds)
-  procCall UIObject(self).update(dt)
-
   case gameState:
     of GameState.textEntry:
       if talkProgress >= 1:
-        writingScreenLabel1.setText(currentPoem[currentPoem.high])
-        writingScreenLabel2.setText(if timeAfterTalkFinished mod 1.0 > 0.5: poemTextEntered else: " " & poemTextEntered & "_")
+        writingScreenLabel2.setText(currentPoem[currentPoem.high])
+        writingScreenLabel3.setText(if timeAfterTalkFinished mod 1.0 > 0.5: poemTextEntered else: " " & poemTextEntered & "_")
       else:
         writingScreenLabel1.setText(if currentPoem.len > 1: currentPoem[currentPoem.high-1] else: "")
-        writingScreenLabel2.setText(currentPoem[currentPoem.high][0..int(float(currentPoem.high) / talkProgress)])
-      if timeAfterTalkFinished > 0.5:
-        writingScreenLabel3.setText("Enter the next line of the poem")
-      else:
+        let poemLine = currentPoem[currentPoem.high]
+        writingScreenLabel2.setText(poemLine[0..<int(float(poemLine.high) * talkProgress)])
         writingScreenLabel3.setText("")
+      if timeAfterTalkFinished > 0.75:
+        writingScreenLabel4.setText("Enter the next line of the poem")
+      else:
+        writingScreenLabel4.setText("")
 
     of GameState.drawing:
       drawingScreenLabel1.setText(currentPoem[currentPoem.high])
@@ -69,6 +67,12 @@ method update* (self: Screen, dt: float) =
       drawingScreenLabel3.setText("Arrow: Move    A/D: rotate    S: cycle color    space: place")
     of GameState.exploring:
       discard
+
+  self.bounds = boundingBox(vec2(-baseScreenHeight * screenAspectRatio / 2, -baseScreenHeight / 2),
+                            vec2(baseScreenHeight * screenAspectRatio / 2, baseScreenHeight / 2))
+  for element in self.innerElements:
+    element.updateLayout(self.bounds)
+  procCall UIObject(self).update(dt)
 
 proc render* (self: Screen, zoom: float) =
   glPushMatrix()

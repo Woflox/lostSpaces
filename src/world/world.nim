@@ -189,11 +189,11 @@ proc updateTextEntry(dt: float) =
       startDrawing()
     timeAfterTalkFinished += dt
   else:
-    if stateTime > 0.5:
+    if stateTime > 1:
       if not startedTalking:
         startedTalking = true
         say(currentPoem[currentPoem.high])
-      talkProgress = (stateTime - 0.5) / (0.05 * float(currentPoem[currentPoem.high].len))
+      talkProgress = (stateTime - 1) / (0.075 * float(currentPoem[currentPoem.high].len))
 
 
 proc finishBuildLevel() =
