@@ -3,6 +3,7 @@ import ../globals/globals
 import uiobject
 import text
 import opengl
+import math
 
 type
   Screen = ref object of UIObject
@@ -51,9 +52,17 @@ method update* (self: Screen, dt: float) =
 
   case gameState:
     of GameState.textEntry:
-      writingScreenLabel1.setText(currentPoem[currentPoem.high])
-      writingScreenLabel2.setText(poemTextEntered)
-      writingScreenLabel3.setText("Enter the next line of the poem")
+      if talkProgress >= 1:
+        writingScreenLabel1.setText(currentPoem[currentPoem.high])
+        writingScreenLabel2.setText(if timeAfterTalkFinished mod 1.0 > 0.5: poemTextEntered else: " " & poemTextEntered & "_")
+      else:
+        writingScreenLabel1.setText(if currentPoem.len > 1: currentPoem[currentPoem.high-1] else: "")
+        writingScreenLabel2.setText(currentPoem[currentPoem.high][0..int(float(currentPoem.high) / talkProgress)])
+      if timeAfterTalkFinished > 0.5:
+        writingScreenLabel3.setText("Enter the next line of the poem")
+      else:
+        writingScreenLabel3.setText("")
+
     of GameState.drawing:
       drawingScreenLabel1.setText(currentPoem[currentPoem.high])
       drawingScreenLabel2.setText("Draw a picture to go with the line")

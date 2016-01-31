@@ -121,7 +121,10 @@ proc startTextEntry* =
   setGameState(GameState.textEntry)
   let previousLine = currentLevel.screens[currentLevelScreen].poemLine
   currentPoem.add(previousLine)
-  say(previousLine)
+  #say(previousLine)
+  startedTalking = false
+  talkProgress = 0
+  timeAfterTalkFinished = 0
   poemTextEntered = ""
   inc currentLevelScreen
   clearEntities()
@@ -173,15 +176,25 @@ proc generate* () =
 
 
 proc updateTextEntry(dt: float) =
-  if input.enteredText == "\b":
-    if poemTextEntered.len > 0:
-      poemTextEntered = poemTextEntered[0 .. <poemTextEntered.high]
+
+  if talkProgress >= 1.0:
+    if input.enteredText == "\b":
+      if poemTextEntered.len > 0:
+        poemTextEntered = poemTextEntered[0 .. <poemTextEntered.high]
+    else:
+      poemTextEntered &= input.enteredText
+    if input.buttonPressed(input.confirm) and poemTextEntered.len > 0:
+      currentLevel.screens[currentLevelScreen].poemLine = poemTextEntered
+      currentPoem.add(poemTextEntered)
+      startDrawing()
+    timeAfterTalkFinished += dt
   else:
-    poemTextEntered &= input.enteredText
-  if input.buttonPressed(input.confirm) and poemTextEntered.len > 0:
-    currentLevel.screens[currentLevelScreen].poemLine = poemTextEntered
-    currentPoem.add(poemTextEntered)
-    startDrawing()
+    if stateTime > 0.5:
+      if not startedTalking:
+        startedTalking = true
+        say(currentPoem[currentPoem.high])
+      talkProgress = (stateTime - 0.5) / (0.05 * float(currentPoem[currentPoem.high].len))
+
 
 proc finishBuildLevel() =
   currentLevel.serialize()

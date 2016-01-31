@@ -99,7 +99,8 @@ let letters* =
            @[vec2(2,0),vec2(1.5,0),vec2(1.5,0.5),vec2(2,0.5),vec2(2,0)]],
     '[': @[@[vec2(1.25,3), vec2(0.75,3), vec2(0.75,0), vec2(1.25,0)]],
     ']': @[@[vec2(0.75,3), vec2(1.25,3), vec2(1.25,0), vec2(0.75,0)]],
-    '|': @[@[centerTop, centerBottom]]}.toTable()
+    '|': @[@[centerTop, centerBottom]],
+    '_': @[@[bottomLeft, bottomRight]]}.toTable()
 
 
 type

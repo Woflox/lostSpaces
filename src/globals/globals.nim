@@ -13,6 +13,9 @@ var
   currentPoem*: seq[string] = @[]
   poemTextEntered*: string = ""
   stateTime*: float
+  startedTalking*: bool
+  talkProgress*: float
+  timeAfterTalkFinished*: float
 
 const
   numTilesX* = 8
