@@ -64,4 +64,3 @@ proc createAndPlayVoiceNode(text: string) =
 
 proc say*(text: string) =
   spawn createAndPlayVoiceNode(text)
-  showSubtitle(text)

@@ -18,7 +18,7 @@ let
   centerBottom = vec2(1,0)
   centerTop = vec2(1,3)
 
-let letters =
+let letters* =
   { 'a': @[@[bottomLeft, vec2(0,2), centerTop, vec2(2,2), bottomRight],
            @[vec2(0,1.125), vec2(2,1.125)]],
     'b': @[@[bottomLeft, topLeft, vec2(1.5, 3), vec2(2, 2.5,), vec2(2, 2), vec2(1.5, 1.5), vec2(2, 1), vec2(2, 0.5), vec2(1.5, 0), bottomLeft],

@@ -3,6 +3,8 @@ import sdl2/joystick
 import sdl2/gamecontroller
 import ../util/util
 import queues
+import ../ui/text
+import tables
 
 var
   stickMoveDir: Vector2
@@ -11,7 +13,7 @@ var
 
 type
   Action* = enum
-    left, right, up, down, rotateLeft, rotateRight, color1, color2, color3,
+    left, right, up, down, rotateLeft, rotateRight, cycleColor, place, confirm
 
   Control = ref object
     action: Action
@@ -29,13 +31,14 @@ var
                Control(action: right, key: K_RIGHT, button: SDL_CONTROLLER_BUTTON_DPAD_RIGHT),
                Control(action: up,    key: K_UP,    button: SDL_CONTROLLER_BUTTON_DPAD_UP),
                Control(action: down,  key: K_DOWN,  button: SDL_CONTROLLER_BUTTON_DPAD_DOWN),
-               Control(action: rotateLeft, key: K_A,     button: SDL_CONTROLLER_BUTTON_A),
-               Control(action: rotateRight, key: K_D,     button: SDL_CONTROLLER_BUTTON_B),
-               Control(action: color1, key: K_1,     button: SDL_CONTROLLER_BUTTON_X),
-               Control(action: color2, key: K_2,     button: SDL_CONTROLLER_BUTTON_Y),
-               Control(action: color3, key: K_3, button: SDL_CONTROLLER_BUTTON_START)]
+               Control(action: rotateLeft, key: K_A,  button: SDL_CONTROLLER_BUTTON_A),
+               Control(action: rotateRight, key: K_D, button: SDL_CONTROLLER_BUTTON_B),
+               Control(action: cycleColor, key: K_S,  button: SDL_CONTROLLER_BUTTON_X),
+               Control(action: place, key: K_SPACE,    button: SDL_CONTROLLER_BUTTON_Y),
+               Control(action: confirm, key: K_RETURN, button: SDL_CONTROLLER_BUTTON_START)]
 
   events = initQueue[Event]()
+  enteredText*: string
 
 proc addEvent*(event: var Event) =
   events.enqueue(event)
@@ -66,18 +69,20 @@ proc handleEvent(event: var Event) =
           control.down = false
 
     of KeyDown:
+      let sym = event.key.keysym.sym
       if not event.key.repeat:
         for control in controls:
-          if control.key == event.key.keysym.sym:
+          if control.key == sym:
             control.pressed = true
             control.down = true
+      if letters.hasKey(char(sym)) or sym == cint(' ') or sym == cint('\b'):
+        enteredText = if char(sym) == '1': "!" elif char(sym) == '/': "?" else: $char(sym)
 
     of KeyUp:
         for control in controls:
           if control.key == event.key.keysym.sym:
             control.released = true
             control.down = false
-
     else:
       discard
 
@@ -89,6 +94,12 @@ proc buttonPressed*(action: Action): bool =
 
 proc buttonReleased*(action: Action): bool =
   result = controls[int(action)].released
+
+proc startText* () =
+  startTextInput()
+
+proc stopText* () =
+  stopTextInput()
 
 proc moveDir*(): Vector2 =
   result = if stickMoveDir == vec2(0, 0): buttonMoveDir else: stickMoveDir.normalize()
@@ -103,6 +114,8 @@ proc update*(dt: float) =
   for control in controls:
     control.pressed = false
     control.released = false
+
+  enteredText = ""
 
   while events.len > 0:
     var event = events.dequeue()

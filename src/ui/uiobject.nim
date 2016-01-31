@@ -37,8 +37,8 @@ proc updateLayout* (self: UIObject, parentBounds: BoundingBox) =
       self.bounds.maxPos.x = parentBounds.maxPos.x + self.position.x
       self.bounds.minPos.x = self.bounds.maxPos.x - self.size.x
     of HAlign.center:
-      self.bounds.minPos.x = parentBounds.center.x - self.size.x / 2
-      self.bounds.maxPos.x = parentBounds.center.x + self.size.x / 2
+      self.bounds.minPos.x = self.position.x + parentBounds.center.x - self.size.x / 2
+      self.bounds.maxPos.x = self.position.x + parentBounds.center.x + self.size.x / 2
     of HAlign.fill:
       self.bounds.minPos.x = parentBounds.minPos.x + self.position.x
       self.bounds.maxPos.x = parentBounds.maxPos.x + self.size.x
@@ -53,8 +53,8 @@ proc updateLayout* (self: UIObject, parentBounds: BoundingBox) =
       self.bounds.maxPos.y = parentBounds.maxPos.y + self.position.y
       self.bounds.minPos.y = self.bounds.maxPos.y - self.size.y
     of VAlign.center:
-      self.bounds.minPos.y = parentBounds.center.y - self.size.y / 2
-      self.bounds.maxPos.y = parentBounds.center.y + self.size.y / 2
+      self.bounds.minPos.y = self.position.y + parentBounds.center.y - self.size.y / 2
+      self.bounds.maxPos.y = self.position.y + parentBounds.center.y + self.size.y / 2
     of VAlign.fill:
       self.bounds.minPos.y = parentBounds.minPos.y + self.position.y
       self.bounds.maxPos.y = parentBounds.maxPos.y + self.size.y

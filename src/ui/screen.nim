@@ -12,26 +12,54 @@ let baseScreenHeight* = 10.0
 proc newScreen(): Screen =
   Screen(hAlign: HAlign.center, vAlign: VAlign.center, position: vec2(0,0), innerElements: @[], shapes: @[])
 
-let hudScreen* = newScreen()
-hudScreen.innerElements.add(newTextObject("FPS: ", hudTextStyle, vec2(0.5, -0.5), HAlign.left, VAlign.top))
+#let hudScreen* = newScreen()
+#hudScreen.innerElements.add(newTextObject("FPS: ", hudTextStyle, vec2(0.5, -0.5), HAlign.left, VAlign.top))
 
-var subtitles = newTextObject("", hudTextStyle, vec2(0, 0.5), HAlign.center, VAlign.bottom)
+let writingScreen* = newScreen()
+let drawingScreen* = newScreen()
+let exploringScreen* = newScreen()
 
-hudScreen.innerELements.add(subtitles)
+var writingScreenLabel1 = newTextObject("", hudTextStyle, vec2(0, 0.5), HAlign.center, VAlign.center)
+var writingScreenLabel2 = newTextObject("", hudTextStyle, vec2(0, 0), HAlign.center, VAlign.center)
+var writingScreenLabel3 = newTextObject("", hudTextStyle, vec2(0, 0.75), HAlign.center, VAlign.bottom)
 
-var currentScreen* = hudScreen
-var timeSinceSubtitleShow: float
-var timeToShowSubtitle: float
+var drawingScreenLabel1 = newTextObject("", hudTextStyle, vec2(0, -0.5), HAlign.center, VAlign.top)
+var drawingScreenLabel2 = newTextObject("", hudTextStyle, vec2(0, 0.75), HAlign.center, VAlign.bottom)
+var drawingScreenLabel3 = newTextObject("", hudTextStyle, vec2(0, 0.25), HAlign.center, VAlign.bottom)
+
+var exploringScreenLabel = newTextObject("", hudTextStyle, vec2(0, 0.5), HAlign.center, VAlign.bottom)
+
+
+writingScreen.innerELements.add(writingScreenLabel1)
+writingScreen.innerELements.add(writingScreenLabel2)
+writingScreen.innerELements.add(writingScreenLabel3)
+
+drawingScreen.innerElements.add(drawingScreenLabel1)
+drawingScreen.innerElements.add(drawingScreenLabel2)
+drawingScreen.innerElements.add(drawingScreenLabel3)
+
+exploringScreen.innerElements.add(exploringScreenLabel)
+
+var currentScreen* = writingScreen
 
 method update* (self: Screen, dt: float) =
   self.bounds = boundingBox(vec2(-baseScreenHeight * screenAspectRatio / 2, -baseScreenHeight / 2),
                             vec2(baseScreenHeight * screenAspectRatio / 2, baseScreenHeight / 2))
-  timeSinceSubtitleShow += dt
-  if timeSinceSubtitleShow > timeToShowSubtitle:
-    subtitles.setText("")
   for element in self.innerElements:
     element.updateLayout(self.bounds)
   procCall UIObject(self).update(dt)
+
+  case gameState:
+    of GameState.textEntry:
+      writingScreenLabel1.setText(currentPoem[currentPoem.high])
+      writingScreenLabel2.setText(poemTextEntered)
+      writingScreenLabel3.setText("Enter the next line of the poem")
+    of GameState.drawing:
+      drawingScreenLabel1.setText(currentPoem[currentPoem.high])
+      drawingScreenLabel2.setText("Draw a picture to go with the line")
+      drawingScreenLabel3.setText("Arrow: Move    A/D: rotate    S: cycle color    space: place")
+    of GameState.exploring:
+      discard
 
 proc render* (self: Screen, zoom: float) =
   glPushMatrix()
@@ -54,7 +82,3 @@ proc render* (self: Screen, zoom: float) =
   glEnd()
   glPopMatrix()
 
-proc showSubtitle* (text: string) =
-  subtitles.setText(text)
-  timeSinceSubtitleShow = 0
-  timeToShowSubtitle = float(text.len) * 0.1
