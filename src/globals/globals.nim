@@ -12,6 +12,7 @@ var
   gameState*: GameState
   currentPoem*: seq[string] = @[]
   poemTextEntered*: string = ""
+  caption*: string
   stateTime*: float
   startedTalking*: bool
   talkProgress*: float
@@ -22,4 +23,5 @@ const
   numTilesY* = 8
   tileSize* = 10.0
   floorY* = -numTilesY * 0.5 * tileSize
+  screenEdge* = tileSize * numTilesX
   numLevelScreens* = 8

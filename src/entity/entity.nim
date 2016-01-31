@@ -14,6 +14,7 @@ type
     destroyed*: bool
     collisionTag*: CollisionTag
     onScreen*: bool
+  NormalDrawEntity* = ref object of Entity
 
 const
   numTags = 4

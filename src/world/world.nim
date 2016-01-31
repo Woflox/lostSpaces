@@ -15,6 +15,7 @@ import ../entity/tileObject
 import ../globals/globals
 import ../entity/floor
 import ../entity/background
+import ../entity/character
 from ../input/input import nil
 from ../entity/camera import nil
 import math
@@ -162,6 +163,28 @@ proc startBuildLevel* (number: int) =
   currentPoem = @[]
   startTextEntry()
 
+proc loadScreen* (screenNumber: int) =
+  currentLevelScreen = screenNumber
+  clearEntities()
+  generateFloor()
+  generateBackground()
+  generateCharacter()
+
+  if screenNumber >= 0 and screenNumber < 8:
+    for tile in currentLevel.screens[currentLevelScreen].tiles:
+      addEntity(tile)
+    caption = currentLevel.screens[currentLevelScreen].poemLine
+    say(caption)
+  else:
+    caption = ""
+
+
+proc startExplore* (number: int) =
+  setGameState(GameState.exploring)
+  currentLevel = levels[number]
+  setPallette(number)
+  loadScreen(0)
+
 proc generate* () =
   clearEntities()
   var camera = newCamera(vec2(0,0))
@@ -170,7 +193,8 @@ proc generate* () =
   while fileExists($levelNum & ".lvl"):
     levels.add(unserializeLevel(levelNum))
     levelNum += 1
-  startBuildLevel(levelNum)
+  #startBuildLevel(levelNum)
+  startExplore(levelNum-1)
 
 #playSound(newAmbientNode(), -4.0, 0.0)
 
@@ -269,6 +293,15 @@ proc render* () =
   glBegin(GL_TRIANGLES)
   for entity in entitiesOfType[Rock]():
     entity.renderSolid()
+  glEnd()
+  glBlendFunc (GL_ONE, GL_ONE_MINUS_SRC_COLOR);
+  glBegin(GL_TRIANGLES)
+  for entity in entitiesOfType[NormalDrawEntity]():
+    entity.renderSolid()
+  glEnd()
+  glBegin(GL_LINES)
+  for entity in entitiesOfType[NormalDrawEntity]():
+    entity.renderLine()
   glEnd()
   glBlendFunc(GL_ONE, GL_ZERO)
   glBegin(GL_TRIANGLES)

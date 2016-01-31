@@ -23,13 +23,13 @@ let exploringScreen* = newScreen()
 var writingScreenLabel1 = newTextObject("", hudTextStyle, vec2(0, 1.0), HAlign.center, VAlign.center)
 var writingScreenLabel2 = newTextObject("", hudTextStyle, vec2(0, 0.5), HAlign.center, VAlign.center)
 var writingScreenLabel3 = newTextObject("", hudTextStyle, vec2(0, 0), HAlign.center, VAlign.center)
-var writingScreenLabel4 = newTextObject("", hudTextStyle, vec2(0, 0.75), HAlign.center, VAlign.bottom)
+var writingScreenLabel4 = newTextObject("", hudTextStyle, vec2(0, 0.7), HAlign.center, VAlign.bottom)
 
 var drawingScreenLabel1 = newTextObject("", hudTextStyle, vec2(0, -0.5), HAlign.center, VAlign.top)
-var drawingScreenLabel2 = newTextObject("", hudTextStyle, vec2(0, 0.75), HAlign.center, VAlign.bottom)
-var drawingScreenLabel3 = newTextObject("", hudTextStyle, vec2(0, 0.25), HAlign.center, VAlign.bottom)
+var drawingScreenLabel2 = newTextObject("", hudTextStyle, vec2(0, 0.7), HAlign.center, VAlign.bottom)
+var drawingScreenLabel3 = newTextObject("", hudTextStyle, vec2(0, 0.2), HAlign.center, VAlign.bottom)
 
-var exploringScreenLabel = newTextObject("", hudTextStyle, vec2(0, 0.5), HAlign.center, VAlign.bottom)
+var exploringScreenLabel = newTextObject("", hudTextStyle, vec2(0, 0.7), HAlign.center, VAlign.bottom)
 
 
 writingScreen.innerELements.add(writingScreenLabel1)
@@ -66,7 +66,7 @@ method update* (self: Screen, dt: float) =
       drawingScreenLabel2.setText("Draw a picture to go with the line")
       drawingScreenLabel3.setText("Arrow: Move    A/D: rotate    S: cycle color    space: place")
     of GameState.exploring:
-      discard
+      exploringScreenLabel.setText(caption)
 
   self.bounds = boundingBox(vec2(-baseScreenHeight * screenAspectRatio / 2, -baseScreenHeight / 2),
                             vec2(baseScreenHeight * screenAspectRatio / 2, baseScreenHeight / 2))
