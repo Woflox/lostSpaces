@@ -16,6 +16,7 @@ import ../globals/globals
 import ../entity/floor
 import ../entity/background
 import ../entity/character
+import ../entity/door
 from ../input/input import nil
 from ../entity/camera import nil
 import math
@@ -39,6 +40,11 @@ var currentLevel: Level
 var currentLevelScreen = 0
 
 proc setPallette(levelNum: int) =
+
+  if levelNum == -1:
+    pallette[2] = color(1,1,1) * 0.0625
+    return
+
   seed(levelNum * 1000)
 
   var mainColor1 = color(uniformRandom(), uniformRandom(), uniformRandom())
@@ -130,7 +136,7 @@ proc startTextEntry* =
   inc currentLevelScreen
   clearEntities()
   generateFloor()
-  generateBackground()
+  #generateBackground()
 
 proc startNewLineGroup* =
   lineGroup = newLineGroup(@[])
@@ -159,31 +165,58 @@ proc startDrawing* =
 proc startBuildLevel* (number: int) =
   currentLevel = generateLevel(number)
   setPallette(number)
+  pallette[2] = color(0,0,0)
   levels.add(currentLevel)
   currentPoem = @[]
   startTextEntry()
 
-proc loadScreen* (screenNumber: int) =
+proc getDoorX(number: int): float =
+  return float(number mod doorsPerScreen) * doorSpacing - doorSpacing * float(doorsPerScreen - 1) / 2
+
+proc loadScreen* (screenNumber: int, fromRight: bool = false, atDoor: bool = false, doorNum: int = 0) =
+  setGameState(GameState.exploring)
   currentLevelScreen = screenNumber
   clearEntities()
+  if onHubLevel:
+    seed(43215 + 4351 * screenNumber)
+
   generateFloor()
   generateBackground()
-  generateCharacter()
+  generateCharacter(if fromRight: screenEdge elif atDoor: getDoorX(doorNum) else: -screenEdge)
+  startedTalking = false
+
+  if onHubLevel:
+    caption = ""
+    for i in 0..3:
+      let doorNum = i + screenNumber * doorsPerScreen
+      if doorNum < levels.len:
+        generateDoor(getDoorX(doorNum), doorNum)
+    return
 
   if screenNumber >= 0 and screenNumber < 8:
     for tile in currentLevel.screens[currentLevelScreen].tiles:
       addEntity(tile)
     caption = currentLevel.screens[currentLevelScreen].poemLine
-    say(caption)
   else:
     caption = ""
+    if screenNumber == 8:
+      generateDoor(0, -1)
 
 
 proc startExplore* (number: int) =
   setGameState(GameState.exploring)
-  currentLevel = levels[number]
   setPallette(number)
-  loadScreen(0)
+  echo number
+  if number == -1:
+    echo "hubLevel"
+    onHubLevel = true
+    let screen = currentLevel.number div doorsPerScreen
+    loadScreen(screen, false, true, currentLevel.number)
+  else:
+    onHubLevel = false
+    seed(number * 1000)
+    currentLevel = levels[number]
+    loadScreen(-1)
 
 proc generate* () =
   clearEntities()
@@ -193,8 +226,8 @@ proc generate* () =
   while fileExists($levelNum & ".lvl"):
     levels.add(unserializeLevel(levelNum))
     levelNum += 1
-  #startBuildLevel(levelNum)
-  startExplore(levelNum-1)
+  startBuildLevel(levelNum)
+  #startExplore(levelNum-1)
 
 #playSound(newAmbientNode(), -4.0, 0.0)
 
@@ -222,8 +255,9 @@ proc updateTextEntry(dt: float) =
 
 proc finishBuildLevel() =
   currentLevel.serialize()
+  startExplore(currentLevel.number)
 
-proc updateDrawing(dr: float) =
+proc updateDrawing(dt: float) =
   if input.buttonPressed(input.rotateLeft):
     lineGroup.rotate(RotateDirection.counterClockwise)
   if input.buttonPressed(input.rotateRight):
@@ -247,6 +281,31 @@ proc updateDrawing(dr: float) =
         startTextEntry()
     else:
       startNewLineGroup()
+
+proc enterDoor(number: int) =
+  startExplore(number)
+
+
+proc updateExploring(dt: float) =
+  var character = entityOfType[Character]()
+
+  if onHubLevel:
+    if character.position.x == screenEdge and currentLevelScreen < levels.high div doorsPerScreen:
+      loadScreen(currentLevelScreen + 1)
+    if character.position.x == -screenEdge and currentLevelScreen > 0:
+      loadScreen(currentLevelScreen - 1, true)
+  else:
+    if character.position.x == screenEdge and currentLevelScreen < 8:
+      loadScreen(currentLevelScreen + 1)
+
+  if stateTime > 1 and not startedTalking:
+    startedTalking = true
+    say(caption)
+
+  if input.buttonPressed(input.up):
+    for door in entitiesOfType[Door]():
+      if door.position.x - character.position.x < 10:
+        enterDoor(door.number)
 
 
 proc update* (dt: float) =
@@ -272,7 +331,7 @@ proc update* (dt: float) =
     of GameState.drawing:
       updateDrawing(dt)
     of GameState.exploring:
-      discard
+      updateExploring(dt)
 
   stateTime += dt
 
@@ -294,18 +353,11 @@ proc render* () =
   for entity in entitiesOfType[Rock]():
     entity.renderSolid()
   glEnd()
-  glBlendFunc (GL_ONE, GL_ONE_MINUS_SRC_COLOR);
-  glBegin(GL_TRIANGLES)
-  for entity in entitiesOfType[NormalDrawEntity]():
-    entity.renderSolid()
-  glEnd()
-  glBegin(GL_LINES)
-  for entity in entitiesOfType[NormalDrawEntity]():
-    entity.renderLine()
-  glEnd()
   glBlendFunc(GL_ONE, GL_ZERO)
   glBegin(GL_TRIANGLES)
   entityOfType[Floor]().renderSolid()
+  for entity in entitiesOfType[Door]():
+    entity.renderSolid()
   glEnd()
   glBegin(GL_LINES)
   entityOfType[Floor]().renderLine()
@@ -314,5 +366,13 @@ proc render* () =
   glBegin(GL_LINES)
   for entity in entitiesOfType[LineObject]():
     entity.renderLine()
+  for entity in entitiesOfType[NormalDrawEntity]():
+    entity.renderLine()
+  for entity in entitiesOfType[Door]():
+    entity.renderLine()
+  glEnd()
+  glBegin(GL_TRIANGLES)
+  for entity in entitiesOfType[NormalDrawEntity]():
+    entity.renderSolid()
   glEnd()
   glPopMatrix()

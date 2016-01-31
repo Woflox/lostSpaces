@@ -17,6 +17,7 @@ var
   startedTalking*: bool
   talkProgress*: float
   timeAfterTalkFinished*: float
+  onHubLevel*: bool
 
 const
   numTilesX* = 8
@@ -25,3 +26,5 @@ const
   floorY* = -numTilesY * 0.5 * tileSize
   screenEdge* = tileSize * numTilesX
   numLevelScreens* = 8
+  doorSpacing* = 40
+  doorsPerScreen* = 4

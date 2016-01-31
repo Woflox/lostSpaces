@@ -10,7 +10,7 @@ type
   Character* = ref object of NormalDrawEntity
 
 const
-  scale = 1.0
+  scale = 1.25
   headLength = 1.0*scale
   torsoLength = 2.25*scale
   armLegRatio = 0.75
@@ -18,10 +18,12 @@ const
   neckLength = 0.5*scale
   kneeBend = 0.5*scale
   armMoveRatio = 0.75
-  limbMoveScale = 1.5
+  limbMoveScale = 1.8
   shoulderRatio = 0.25
-  limbMoveFrequency = 0.75
-  moveSpeed = 20.0
+  limbMoveFrequency = 0.5
+  moveSpeed = 30.0
+  floorLineSize = 2.5
+  floorLineIntensity = 0.125
   boilDistance = 0.25
   color = color(1,1,1,1)
   headIndex = 0
@@ -30,8 +32,9 @@ const
   rightArmIndex = 3
   leftLegIndex = 4
   rightLegIndex = 5
+  floorLineIndex = 6
 
-proc generateCharacter* () =
+proc generateCharacter* (x: float) =
   var character = Character(drawable: true)
 
   let head = createShape(vertices = @[vec2(0,0), vec2(0,0),vec2(-headLength,headLength),vec2(0,0),
@@ -47,10 +50,12 @@ proc generateCharacter* () =
                          drawStyle = DrawStyle.line, lineColor = color)
   let rightLeg = createShape(vertices = @[vec2(0,0), vec2(0,0), vec2(0,0)],
                          drawStyle = DrawStyle.line, lineColor = color)
+  let floorLineShape = createShape(vertices = @[vec2(0,0),vec2(0,0)],
+                                drawStyle = DrawStyle.line, lineColor = color * floorLineIntensity)
 
-  character.shapes = @[head, torso, leftArm, rightArm, leftLeg, rightLeg]
+  character.shapes = @[head, torso, leftArm, rightArm, leftLeg, rightLeg, floorLineShape]
   character.init()
-  character.position = vec2(-screenEdge, floorY)
+  character.position = vec2(x, floorY)
   addEntity(character)
 
 method update (self: Character, dt: float) =
@@ -90,7 +95,12 @@ method update (self: Character, dt: float) =
   self.shapes[headIndex].vertices[4] = origin + vec2(headLength*0.5, headLength*0.66 + neckLength)
   self.shapes[headIndex].vertices[5] = origin + vec2(0, neckLength)
 
-  for i in 0..self.shapes.high:
+  #floorline
+  origin = self.position
+  self.shapes[floorLineIndex].vertices[0] = origin + vec2(-floorLineSize, 0)
+  self.shapes[floorLineIndex].vertices[1] = origin + vec2(floorLineSize, 0)
+
+  for i in 0..<self.shapes.high:
     for j in 0..self.shapes[i].vertices.high:
       self.shapes[i].vertices[j] = self.shapes[i].vertices[j] + randomPointInDisc(boilDistance)
 

@@ -66,7 +66,11 @@ method update* (self: Screen, dt: float) =
       drawingScreenLabel2.setText("Draw a picture to go with the line")
       drawingScreenLabel3.setText("Arrow: Move    A/D: rotate    S: cycle color    space: place")
     of GameState.exploring:
-      exploringScreenLabel.setText(caption)
+      if startedTalking:
+        exploringScreenLabel.setText(caption)
+      else:
+        exploringScreenLabel.setText("")
+
 
   self.bounds = boundingBox(vec2(-baseScreenHeight * screenAspectRatio / 2, -baseScreenHeight / 2),
                             vec2(baseScreenHeight * screenAspectRatio / 2, baseScreenHeight / 2))
