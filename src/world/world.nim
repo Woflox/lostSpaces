@@ -13,6 +13,8 @@ import ../ui/uiobject
 import ../ui/screen
 import ../entity/tileObject
 import ../globals/globals
+import ../entity/floor
+import ../entity/background
 from ../input/input import nil
 from ../entity/camera import nil
 import math
@@ -122,6 +124,9 @@ proc startTextEntry* =
   say(previousLine)
   poemTextEntered = ""
   inc currentLevelScreen
+  clearEntities()
+  generateFloor()
+  generateBackground()
 
 proc startNewLineGroup* =
   lineGroup = newLineGroup(@[])
@@ -202,7 +207,6 @@ proc updateDrawing(dr: float) =
         finishBuildLevel()
       else:
         inc currentLevelScreen
-        clearEntities()
         startTextEntry()
     else:
       startNewLineGroup()
@@ -239,17 +243,30 @@ proc update* (dt: float) =
 
 proc render* () =
   glPushMatrix()
-  let scale = 1 / (numTilesY * tileSize)
+  let scale = 1 / ((numTilesY) * tileSize)
   glScaled(scale, scale, 1)
 
   glEnable (GL_BLEND);
   glBlendFunc (GL_ONE, GL_ONE_MINUS_SRC_COLOR);
   glBegin(GL_TRIANGLES)
-  for entity in entities:
+  for entity in entitiesOfType[LineObject]():
     entity.renderSolid()
   glEnd()
+  glBlendFunc (GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR)
+  glBegin(GL_TRIANGLES)
+  for entity in entitiesOfType[Rock]():
+    entity.renderSolid()
+  glEnd()
+  glBlendFunc(GL_ONE, GL_ZERO)
+  glBegin(GL_TRIANGLES)
+  entityOfType[Floor]().renderSolid()
+  glEnd()
   glBegin(GL_LINES)
-  for entity in entities:
+  entityOfType[Floor]().renderLine()
+  glEnd()
+  glBlendFunc (GL_ONE, GL_ONE_MINUS_SRC_COLOR);
+  glBegin(GL_LINES)
+  for entity in entitiesOfType[LineObject]():
     entity.renderLine()
   glEnd()
   glPopMatrix()

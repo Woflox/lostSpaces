@@ -15,8 +15,8 @@ var
   stateTime*: float
 
 const
-  numTilesX* = 7
-  numTilesY* = 7
+  numTilesX* = 8
+  numTilesY* = 8
   tileSize* = 10.0
-  tileOffset* = vec2(0, -10)
+  floorY* = -numTilesY * 0.5 * tileSize
   numLevelScreens* = 8

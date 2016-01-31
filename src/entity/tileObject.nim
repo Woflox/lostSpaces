@@ -27,7 +27,7 @@ const solidRelativeVertices =
   [vec2(-0.5, 0.5), vec2(0.5, -0.5), vec2(1.5, -0.5), vec2(-0.5, 1.5)]]
 
 proc getTilePos(x,y: int): Vector2 =
-  result = vec2((float(x) - numTilesX * 0.5) * tileSize, (float(y) - numTilesY * 0.5) * tileSize)
+  result = vec2((float(x) - (numTilesX - 1) * 0.5) * tileSize, (float(y) - (numTilesY - 1) * 0.5) * tileSize)
 
 type
   RotateDirection* {.pure.} = enum
@@ -46,25 +46,34 @@ proc newLineObject* (x, y, tileRotation, palletteIndex: int): LineObject =
                                 drawStyle = DrawStyle.line)
   let solidShape = createShape(vertices = @[vec2(0,0),vec2(0,0),vec2(0,0),vec2(0,0)],
                                drawStyle = DrawStyle.solid)
-  result.shapes = @[lineShape, solidShape]
+  let floorLineShape = createShape(vertices = @[vec2(0,0),vec2(0,0)],
+                                drawStyle = DrawStyle.line)
+  let bloomShape = createShape(vertices = @[vec2(0,0),vec2(0,0),vec2(0,0),vec2(0,0),vec2(0,0),vec2(0,0),vec2(0,0),vec2(0,0)],
+                               drawStyle = DrawStyle.solid)
+  result.shapes = @[lineShape, solidShape, floorLineShape, bloomShape]
   result.init()
 
 proc newLineObject* (): LineObject =
-  result = LineObject()
+  result = newLineObject(0, 0, 0, 0)
 
 method update(self: LineObject, dt: float) =
 
   let tilePos = getTilePos(self.x, self.y)
-  self.shapes[0].vertices[0] = lineRelativeVertices[self.tileRotation][0] * tileSize + tilePos
-  self.shapes[0].vertices[1] = lineRelativeVertices[self.tileRotation][1] * tileSize + tilePos
-  self.shapes[1].vertices[0] = solidRelativeVertices[self.tileRotation][0] * tileSize + tilePos
-  self.shapes[1].vertices[1] = solidRelativeVertices[self.tileRotation][1] * tileSize + tilePos
-  self.shapes[1].vertices[2] = solidRelativeVertices[self.tileRotation][2] * tileSize + tilePos
-  self.shapes[1].vertices[3] = solidRelativeVertices[self.tileRotation][3] * tileSize + tilePos
+  for i in 0..1:
+    self.shapes[0].vertices[i] = lineRelativeVertices[self.tileRotation][i] * tileSize + tilePos
+  for i in 0..3:
+    self.shapes[1].vertices[i] = solidRelativeVertices[self.tileRotation][i] * tileSize + tilePos
+
+  let floorLineIntensity = 0.5 / (float(self.y) + 2)
+  let floorLineSize = 1.5 + float(self.y) * 0.5
+
+  self.shapes[2].vertices[0] = vec2(tilePos.x - floorLineSize * tileSize, floorY)
+  self.shapes[2].vertices[1] = vec2(tilePos.x + floorLineSize * tileSize, floorY)
 
   let color = pallette[self.palletteIndex]
   self.shapes[0].lineColor = color
   self.shapes[1].fillColor = color * 0.125
+  self.shapes[2].lineColor = color * floorLineIntensity
 
 
 proc newLineGroup* (tiles: seq[LineObject]): LineGroup =
@@ -99,12 +108,12 @@ proc keepInBounds* (self: LineGroup) =
   var toMoveX = 0
   var toMoveY = 0
 
-  if maxX >= numTilesX:
-    toMoveX = numTilesX - maxX
+  if maxX > numTilesX - 1:
+    toMoveX = (numTilesX - 1) - maxX
   if minX < 0:
     toMoveX = -minX
-  if maxY >= numTilesY:
-    toMoveY = numTilesY - maxY
+  if maxY >= numTilesY - 1:
+    toMoveY = (numTilesY - 1) - maxY
   if minY < 0:
     toMoveY = -minY
 

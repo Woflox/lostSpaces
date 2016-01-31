@@ -75,7 +75,6 @@ proc initShapeTransforms(self: Entity) =
     self.shapes[i].init(self.transform)
     self.boundingBox.expandTo(self.shapes[i].boundingBox)
 
-
 proc collides(tag1: CollisionTag, tag2: CollisionTag): bool =
   case tag1:
     of CollisionTag.playerWeapon:
