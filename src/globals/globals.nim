@@ -13,6 +13,7 @@ var
   currentPoem*: seq[string] = @[]
   poemTextEntered*: string = ""
   caption*: string
+  doorText*: string
   stateTime*: float
   startedTalking*: bool
   talkProgress*: float
@@ -28,3 +29,4 @@ const
   numLevelScreens* = 8
   doorSpacing* = 40
   doorsPerScreen* = 4
+  wallPadding* = 5.0

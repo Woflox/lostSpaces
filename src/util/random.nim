@@ -47,7 +47,7 @@ proc relativeRandom* (self: var MersenneTwister, median: float, maxMultiplier: f
 proc randomColor* (self: var MersenneTwister): Color =
   result = color(self.uniformRandom(), self.uniformRandom(), self.uniformRandom())
   let fullColorIndex = self.random(0, 2)
-  let halfColorIndex = (fullColorIndex + self.random(0, 1)) mod 3
+  let halfColorIndex = (fullColorIndex + self.random(1, 2)) mod 3
   result[fullColorIndex] = 1
   result[halfColorIndex] = result[halfColorIndex] * 0.5
 

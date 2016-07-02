@@ -30,7 +30,7 @@ var drawingScreenLabel2 = newTextObject("", hudTextStyle, vec2(0, 0.7), HAlign.c
 var drawingScreenLabel3 = newTextObject("", hudTextStyle, vec2(0, 0.2), HAlign.center, VAlign.bottom)
 
 var exploringScreenLabel = newTextObject("", hudTextStyle, vec2(0, 0.7), HAlign.center, VAlign.bottom)
-
+var exploringScreenDoorLabel = newTextObject("", hudTextStyle, vec2(0, -1.0), HAlign.center, VAlign.center)
 
 writingScreen.innerELements.add(writingScreenLabel1)
 writingScreen.innerELements.add(writingScreenLabel2)
@@ -42,6 +42,7 @@ drawingScreen.innerElements.add(drawingScreenLabel2)
 drawingScreen.innerElements.add(drawingScreenLabel3)
 
 exploringScreen.innerElements.add(exploringScreenLabel)
+exploringScreen.innerElements.add(exploringScreenDoorLabel)
 
 var currentScreen* = writingScreen
 
@@ -70,6 +71,8 @@ method update* (self: Screen, dt: float) =
         exploringScreenLabel.setText(caption)
       else:
         exploringScreenLabel.setText("")
+      exploringScreenDoorLabel.setText(doorText)
+
 
 
   self.bounds = boundingBox(vec2(-baseScreenHeight * screenAspectRatio / 2, -baseScreenHeight / 2),

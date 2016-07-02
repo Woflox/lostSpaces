@@ -39,6 +39,9 @@ levels = @[]
 var currentLevel: Level
 var currentLevelScreen = 0
 
+var maxSpeechScreen = -1
+
+
 proc setPallette(levelNum: int) =
 
   if levelNum == -1:
@@ -49,13 +52,13 @@ proc setPallette(levelNum: int) =
 
   var mainColor1 = color(uniformRandom(), uniformRandom(), uniformRandom())
   var fullColorIndex = random(0, 2)
-  var halfColorIndex = (fullColorIndex + random(0, 1)) mod 3
+  var halfColorIndex = (fullColorIndex + random(1, 2)) mod 3
   mainColor1[fullColorIndex] = 1
   mainColor1[halfColorIndex] = mainColor1[halfColorIndex] * 0.5
 
   var mainColor2 = color(uniformRandom(), uniformRandom(), uniformRandom())
   halfColorIndex = fullColorIndex
-  fullColorIndex = (halfColorIndex + random(0, 10)) mod 3
+  fullColorIndex = (halfColorIndex + random(1, 2)) mod 3
   mainColor2[fullColorIndex] = 1
   mainColor2[halfColorIndex] = mainColor2[halfColorIndex] * 0.5
 
@@ -135,7 +138,7 @@ proc startTextEntry* =
   poemTextEntered = ""
   inc currentLevelScreen
   clearEntities()
-  generateFloor()
+  generateFloor(false, false)
   #generateBackground()
 
 proc startNewLineGroup* =
@@ -164,6 +167,7 @@ proc startDrawing* =
 
 proc startBuildLevel* (number: int) =
   currentLevel = generateLevel(number)
+
   setPallette(number)
   pallette[2] = color(0,0,0)
   levels.add(currentLevel)
@@ -180,17 +184,30 @@ proc loadScreen* (screenNumber: int, fromRight: bool = false, atDoor: bool = fal
   if onHubLevel:
     seed(43215 + 4351 * screenNumber)
 
-  generateFloor()
+  var leftWall = screenNumber == -1
+  var rightWall = if onHubLevel: screenNumber == levels.high div doorsPerScreen else: screenNumber == 8
+
+  generateFloor(leftWall, rightWall)
   generateBackground()
   generateCharacter(if fromRight: screenEdge elif atDoor: getDoorX(doorNum) else: -screenEdge)
+
   startedTalking = false
+
+  if (maxSpeechScreen >= screenNumber):
+    startedTalking = true
 
   if onHubLevel:
     caption = ""
-    for i in 0..3:
-      let doorNum = i + screenNumber * doorsPerScreen
-      if doorNum < levels.len:
-        generateDoor(getDoorX(doorNum), doorNum)
+    if screenNumber == -1:
+      generateDoor(0, -2)
+      doorText = "EXIT"
+      startedTalking = true
+    else:
+      doorText = ""
+      for i in 0..3:
+        let doorNum = i + screenNumber * doorsPerScreen
+        if doorNum < levels.len:
+          generateDoor(getDoorX(doorNum), doorNum)
     return
 
   if screenNumber >= 0 and screenNumber < 8:
@@ -204,6 +221,11 @@ proc loadScreen* (screenNumber: int, fromRight: bool = false, atDoor: bool = fal
 
 
 proc startExplore* (number: int) =
+
+  if number == -2:
+    quit()
+
+  maxSpeechScreen = -1
   setGameState(GameState.exploring)
   setPallette(number)
   echo number
@@ -285,26 +307,28 @@ proc updateDrawing(dt: float) =
 proc enterDoor(number: int) =
   startExplore(number)
 
-
 proc updateExploring(dt: float) =
   var character = entityOfType[Character]()
 
   if onHubLevel:
     if character.position.x == screenEdge and currentLevelScreen < levels.high div doorsPerScreen:
       loadScreen(currentLevelScreen + 1)
-    if character.position.x == -screenEdge and currentLevelScreen > 0:
+    if character.position.x == -screenEdge and currentLevelScreen > -1:
       loadScreen(currentLevelScreen - 1, true)
   else:
     if character.position.x == screenEdge and currentLevelScreen < 8:
       loadScreen(currentLevelScreen + 1)
+    if character.position.x == -screenEdge and currentLevelScreen > -1:
+      loadScreen(currentLevelScreen - 1, true)
 
   if stateTime > 1 and not startedTalking:
     startedTalking = true
+    maxSpeechScreen = max(currentLevelScreen, maxSpeechScreen)
     say(caption)
 
-  if input.buttonPressed(input.up):
+  if input.buttonPressed(input.up) or input.buttonPressed(input.place) or input.buttonPressed(input.confirm):
     for door in entitiesOfType[Door]():
-      if door.position.x - character.position.x < 10:
+      if abs(door.position.x - character.position.x) < 10:
         enterDoor(door.number)
 
 
