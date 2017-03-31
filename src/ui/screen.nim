@@ -30,7 +30,13 @@ var drawingScreenLabel2 = newTextObject("", hudTextStyle, vec2(0, 0.7), HAlign.c
 var drawingScreenLabel3 = newTextObject("", hudTextStyle, vec2(0, 0.2), HAlign.center, VAlign.bottom)
 
 var exploringScreenLabel = newTextObject("", hudTextStyle, vec2(0, 0.7), HAlign.center, VAlign.bottom)
-var exploringScreenDoorLabel = newTextObject("", hudTextStyle, vec2(0, -1.0), HAlign.center, VAlign.center)
+var exploringScreenExitDoorLabel = newTextObject("", hudTextStyle, vec2(0, -1.0), HAlign.center, VAlign.center)
+
+var exploringScreenNormalDoorLabels: array[0..(doorsPerScreen - 1), TextObject]
+
+for i in 0..<doorsPerScreen:
+  var scaleFactor = (baseScreenHeight * 0.67) / (float(numTilesY) * float(tileSize)) #not sure where the constant comes from
+  exploringScreenNormalDoorLabels[i] = newTextObject("", hudTextStyle, vec2(getDoorX(i) * scaleFactor, -1.0), HAlign.center, VAlign.center)
 
 writingScreen.innerELements.add(writingScreenLabel1)
 writingScreen.innerELements.add(writingScreenLabel2)
@@ -42,7 +48,10 @@ drawingScreen.innerElements.add(drawingScreenLabel2)
 drawingScreen.innerElements.add(drawingScreenLabel3)
 
 exploringScreen.innerElements.add(exploringScreenLabel)
-exploringScreen.innerElements.add(exploringScreenDoorLabel)
+exploringScreen.innerElements.add(exploringScreenExitDoorLabel)
+
+for doorLabel in exploringScreenNormalDoorLabels:
+  exploringScreen.innerElements.add(doorLabel)
 
 var currentScreen* = writingScreen
 
@@ -71,7 +80,10 @@ method update* (self: Screen, dt: float) =
         exploringScreenLabel.setText(caption)
       else:
         exploringScreenLabel.setText("")
-      exploringScreenDoorLabel.setText(doorText)
+      exploringScreenExitDoorLabel.setText(exitDoorText)
+      
+      for i in 0..<doorsPerScreen:
+        exploringScreenNormalDoorLabels[i].setText(normalDoorTexts[i])
 
 
 

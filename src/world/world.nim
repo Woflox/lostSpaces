@@ -178,9 +178,6 @@ proc startBuildLevel* (number: int) =
   startTextEntry()
   killMusic = true
 
-proc getDoorX(number: int): float =
-  return float(number mod doorsPerScreen) * doorSpacing - doorSpacing * float(doorsPerScreen - 1) / 2
-
 proc loadScreen* (screenNumber: int, fromRight: bool = false, atDoor: bool = false, doorNum: int = 0) =
   setGameState(GameState.exploring)
   currentLevelScreen = screenNumber
@@ -202,18 +199,25 @@ proc loadScreen* (screenNumber: int, fromRight: bool = false, atDoor: bool = fal
   if (maxSpeechScreen >= screenNumber):
     startedTalking = true
 
+  caption = ""
+  exitDoorText = ""
+  for i in 0..<doorsPerScreen:
+    normalDoorTexts[i] = ""
+
   if onHubLevel:
-    caption = ""
     if screenNumber == -1:
       generateDoor(0, -2)
-      doorText = "EXIT"
+      exitDoorText = "EXIT"
       startedTalking = true
     else:
-      doorText = ""
       for i in 0..3:
         let doorNum = i + screenNumber * doorsPerScreen
         if doorNum <= levels.len:
           generateDoor(getDoorX(doorNum), doorNum)
+        if doorNum < levels.len:
+          normalDoorTexts[i] = $doorNum
+        if doorNum == levels.len:
+          normalDoorTexts[i] = "NEW"
     return
 
   if screenNumber >= 0 and screenNumber < 8:
@@ -221,7 +225,6 @@ proc loadScreen* (screenNumber: int, fromRight: bool = false, atDoor: bool = fal
       addEntity(tile)
     caption = currentLevel.screens[currentLevelScreen].poemLine
   else:
-    caption = ""
     if screenNumber == 8:
       generateDoor(0, -1)
 

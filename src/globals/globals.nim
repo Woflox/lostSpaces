@@ -13,7 +13,6 @@ var
   currentPoem*: seq[string] = @[]
   poemTextEntered*: string = ""
   caption*: string
-  doorText*: string
   stateTime*: float
   startedTalking*: bool
   talkProgress*: float
@@ -31,3 +30,10 @@ const
   doorSpacing* = 40
   doorsPerScreen* = 4
   wallPadding* = 5.0
+
+var
+  exitDoorText*: string
+  normalDoorTexts*: array[0..(doorsPerScreen - 1), string]
+  
+proc getDoorX*(number: int): float =
+  return float(number mod doorsPerScreen) * doorSpacing - doorSpacing * float(doorsPerScreen - 1) / 2
