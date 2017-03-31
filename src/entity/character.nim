@@ -64,7 +64,7 @@ method update (self: Character, dt: float) =
 
   #legs
   var origin = self.position
-  var leftLegX = origin.x + sin(origin.x * limbMoveFrequency) *limbMoveScale
+  var leftLegX = origin.x + sin(origin.x * limbMoveFrequency) * limbMoveScale
   var rightLegX = origin.x - sin(origin.x * limbMoveFrequency) * limbMoveScale
   self.shapes[leftLegIndex].vertices[0] = vec2(leftLegX, origin.y)
   self.shapes[rightLegIndex].vertices[0] = vec2(rightLegX, origin.y)
@@ -81,11 +81,11 @@ method update (self: Character, dt: float) =
   #arms
   origin = self.shapes[torsoIndex].vertices[1]
   self.shapes[leftArmIndex].vertices[0] = origin
-  self.shapes[leftArmIndex].vertices[1] = origin + vec2(sin(origin.x * limbMoveFrequency) *limbMoveScale * armMoveRatio * shoulderRatio, 0)
-  self.shapes[leftArmIndex].vertices[2] = origin + vec2(sin(origin.x * limbMoveFrequency) *limbMoveScale * armMoveRatio, -legLength * armLegRatio - cos(origin.x * 2* limbMoveFrequency)*0.125 * limbMoveScale * armMoveRatio)
+  self.shapes[leftArmIndex].vertices[1] = origin + vec2(sin(origin.x * limbMoveFrequency) * limbMoveScale * armMoveRatio * shoulderRatio, 0)
+  self.shapes[leftArmIndex].vertices[2] = origin + vec2(sin(origin.x * limbMoveFrequency) * limbMoveScale * armMoveRatio, -legLength * armLegRatio - cos(origin.x * 2* limbMoveFrequency)*0.125 * limbMoveScale * armMoveRatio)
   self.shapes[rightArmIndex].vertices[0] = origin
-  self.shapes[rightArmIndex].vertices[1] = origin + vec2(-sin(origin.x * limbMoveFrequency) *limbMoveScale * armMoveRatio * shoulderRatio, 0)
-  self.shapes[rightArmIndex].vertices[2] = origin + vec2(-sin(origin.x * limbMoveFrequency) *limbMoveScale * armMoveRatio, -legLength * armLegRatio - cos(origin.x * 2* limbMoveFrequency)*0.125 * limbMoveScale * armMoveRatio)
+  self.shapes[rightArmIndex].vertices[1] = origin + vec2(-sin(origin.x * limbMoveFrequency) * limbMoveScale * armMoveRatio * shoulderRatio, 0)
+  self.shapes[rightArmIndex].vertices[2] = origin + vec2(-sin(origin.x * limbMoveFrequency) * limbMoveScale * armMoveRatio, -legLength * armLegRatio - cos(origin.x * 2* limbMoveFrequency)*0.125 * limbMoveScale * armMoveRatio)
 
   #head
   self.shapes[headIndex].vertices[0] = origin
