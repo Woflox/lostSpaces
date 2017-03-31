@@ -109,10 +109,6 @@ proc checkForCollisions* (self: Entity, index: int, dt: float) =
           self.onCollision(other)
           other.onCollision(self)
 
-proc init* (self: Entity, rotation = identity()) =
-  self.rotation = rotation
-  self.initShapeTransforms()
-
 proc reposition* (self: Entity, position: Vector2) =
   self.position = position
   self.initShapeTransforms()
@@ -121,6 +117,11 @@ method update* (self: Entity, dt: float) =
   self.updateBehaviour(dt)
   self.updatePostPhysics(dt)
   self.updateShapeTransforms()
+
+proc init* (self: Entity, rotation = identity()) =
+  self.rotation = rotation
+  self.initShapeTransforms()
+  self.update(0)
 
 proc renderLine* (self: Entity) =
   for shape in self.shapes:

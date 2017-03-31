@@ -54,8 +54,8 @@ proc generateCharacter* (x: float) =
                                 drawStyle = DrawStyle.line, lineColor = color * floorLineIntensity)
 
   character.shapes = @[head, torso, leftArm, rightArm, leftLeg, rightLeg, floorLineShape]
-  character.init()
   character.position = vec2(x, floorY)
+  character.init()
   addEntity(character)
 
 method update (self: Character, dt: float) =

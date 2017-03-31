@@ -19,6 +19,7 @@ var
   talkProgress*: float
   timeAfterTalkFinished*: float
   onHubLevel*: bool
+  killMusic*: bool
 
 const
   numTilesX* = 8

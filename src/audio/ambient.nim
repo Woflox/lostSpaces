@@ -3,6 +3,7 @@ import math
 import ../util/noise
 import ../util/random
 import ../util/util
+import ../globals/globals
 
 type
   ChordNodeObj = object of AudioNodeObj
@@ -12,6 +13,7 @@ type
     fadingIn: bool
     fadeTime: float
     timeFaded: float
+    killTimeFaded: float
   ChordNode* = ptr ChordNodeObj
 
 const
@@ -68,6 +70,12 @@ method updateOutputs*(self: ChordNode, dt: float) =
   var volume = self.timeFaded / self.fadeTime
   if not self.fadingIn:
     volume = 1 - volume
+
+  if killMusic:
+    self.killTimeFaded += dt
+    volume *= (1.0 - self.killTimeFaded / 4.0)
+    if self.killTimeFaded >= 4.0:
+      self.stopped = true
 
   self.output[0] = volume * getOutput(self.t + noiseVal1 * chorusAmount, self.freqA, self.freqB)
   self.output[1] = volume * getOutput(self.t + noiseVal2 * chorusAmount, self.freqA, self.freqB,)

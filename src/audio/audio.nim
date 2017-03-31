@@ -24,7 +24,7 @@ type
     lastInput: AudioInput
     output*: AudioSample
     visited: bool
-    stopped: bool
+    stopped*: bool
     stopOnNoInput: bool
     refCount: int
   AudioNode* = ptr AudioNodeObj

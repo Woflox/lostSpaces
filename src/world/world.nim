@@ -41,7 +41,6 @@ var currentLevelScreen = 0
 
 var maxSpeechScreen = -1
 
-
 proc setPallette(levelNum: int) =
 
   if levelNum == -1:
@@ -166,6 +165,10 @@ proc startDrawing* =
   startNewLineGroup()
 
 proc startBuildLevel* (number: int) =
+  currentLevelScreen = 0
+
+  maxSpeechScreen = -1
+
   currentLevel = generateLevel(number)
 
   setPallette(number)
@@ -173,6 +176,7 @@ proc startBuildLevel* (number: int) =
   levels.add(currentLevel)
   currentPoem = @[]
   startTextEntry()
+  killMusic = true
 
 proc getDoorX(number: int): float =
   return float(number mod doorsPerScreen) * doorSpacing - doorSpacing * float(doorsPerScreen - 1) / 2
@@ -183,9 +187,11 @@ proc loadScreen* (screenNumber: int, fromRight: bool = false, atDoor: bool = fal
   clearEntities()
   if onHubLevel:
     seed(43215 + 4351 * screenNumber)
+  else:
+    seed(43215 + 33 * currentLevel.number + 4351 * screenNumber)
 
   var leftWall = screenNumber == -1
-  var rightWall = if onHubLevel: screenNumber == levels.high div doorsPerScreen else: screenNumber == 8
+  var rightWall = if onHubLevel: screenNumber == (levels.high + 1) div doorsPerScreen else: screenNumber == 8
 
   generateFloor(leftWall, rightWall)
   generateBackground()
@@ -206,7 +212,7 @@ proc loadScreen* (screenNumber: int, fromRight: bool = false, atDoor: bool = fal
       doorText = ""
       for i in 0..3:
         let doorNum = i + screenNumber * doorsPerScreen
-        if doorNum < levels.len:
+        if doorNum <= levels.len:
           generateDoor(getDoorX(doorNum), doorNum)
     return
 
@@ -241,6 +247,7 @@ proc startExplore* (number: int) =
     loadScreen(-1)
 
 proc playMusic() =
+  killMusic = false
   playSound(newChordNode(), -4.0, -0.3)
   playSound(newChordNode(), -4.0, 0.3)
 
@@ -305,13 +312,16 @@ proc updateDrawing(dt: float) =
       startNewLineGroup()
 
 proc enterDoor(number: int) =
-  startExplore(number)
+  if number < levels.len:
+    startExplore(number)
+  else:
+    startBuildLevel(levels.len)
 
 proc updateExploring(dt: float) =
   var character = entityOfType[Character]()
 
   if onHubLevel:
-    if character.position.x == screenEdge and currentLevelScreen < levels.high div doorsPerScreen:
+    if character.position.x == screenEdge and currentLevelScreen < (levels.high + 1) div doorsPerScreen:
       loadScreen(currentLevelScreen + 1)
     if character.position.x == -screenEdge and currentLevelScreen > -1:
       loadScreen(currentLevelScreen - 1, true)
