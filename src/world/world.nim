@@ -192,7 +192,7 @@ proc loadScreen* (screenNumber: int, fromRight: bool = false, atDoor: bool = fal
 
   generateFloor(leftWall, rightWall)
   generateBackground()
-  generateCharacter(if fromRight: screenEdge elif atDoor: getDoorX(doorNum) else: -screenEdge)
+  generateCharacter(if fromRight: screenEdge elif atDoor: getDoorX(doorNum) else: -screenEdge, if fromRight: -1 else: 1)
 
   startedTalking = false
 
