@@ -13,11 +13,11 @@ proc createFrameBuffer* (width, height: int): FrameBuffer =
 
   glGenTextures(1, addr(fb.texture))
   glBindTexture(GL_TEXTURE_2D, fb.texture)
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, GLsizei(width), GLsizei(height), 0,
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+  glTexImage2D(GL_TEXTURE_2D, 0, GLInt(GL_RGBA8), GLsizei(width), GLsizei(height), 0,
                GL_RGBA, GL_UNSIGNED_BYTE, nil)
   glBindTexture(GL_TEXTURE_2D, 0)
 
@@ -26,7 +26,7 @@ proc createFrameBuffer* (width, height: int): FrameBuffer =
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                          fb.texture, 0)
   let status = glCheckFramebufferStatus(GL_FRAMEBUFFER)
-  if int(status) != GL_FRAMEBUFFER_COMPLETE:
+  if status != GL_FRAMEBUFFER_COMPLETE:
     echo "Error: Couldn't create Frame Buffer"
   glBindFrameBuffer(GL_FRAMEBUFFER, 0)
   fb.width = width
@@ -35,7 +35,7 @@ proc createFrameBuffer* (width, height: int): FrameBuffer =
 
 proc resize* (self: var FrameBuffer, width, height: int) =
   glBindTexture(GL_TEXTURE_2D, self.texture)
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, GLsizei(width), GLsizei(height), 0,
+  glTexImage2D(GL_TEXTURE_2D, 0, GLInt(GL_RGBA8), GLsizei(width), GLsizei(height), 0,
                GL_RGBA, GL_UNSIGNED_BYTE, nil)
   glBindTexture(GL_TEXTURE_2D, 0)
   self.width = width

@@ -10,7 +10,7 @@ proc compileShader(source: var cstring, shaderType: GLenum): GLuint =
   glCompileShader(result)
   var compiled: GLint
   glGetShaderiv(result, GLenum(GL_COMPILE_STATUS), addr compiled)
-  if compiled == GL_FALSE:
+  if compiled == 0:
     var messageLength: GLint
     glGetShaderiv(result, GLenum(GL_INFO_LOG_LENGTH), addr messageLength)
     var message = newString(messageLength).cstring
@@ -28,7 +28,7 @@ proc newShaderProgram* (vs, ps: string): ShaderProgram =
   glLinkProgram(result)
   var linked: GLint
   glGetProgramiv(result, GLenum(GL_LINK_STATUS), addr linked)
-  if linked == GL_FALSE:
+  if linked == 0:
     var messageLength: GLint
     glGetProgramiv(result, GLenum(GL_INFO_LOG_LENGTH), addr messageLength)
     var message = newString(messageLength).cstring

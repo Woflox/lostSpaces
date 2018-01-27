@@ -35,7 +35,7 @@ iterator inputs*(self: AudioNode): AudioInput =
     yield input
     input = input.next
 
-proc getInputNode*(self: AudioNode, index): AudioNode =
+proc getInputNode*(self: AudioNode, index: int): AudioNode =
   var i = 0
   for input in self.inputs:
     if i == index:
@@ -87,30 +87,31 @@ proc setUnvisited(self: AudioNode) =
     input.node.setUnvisited()
 
 proc update(self: AudioNode, dt: float) =
-  self.visited = true
-  var input = self.firstInput
-  while input != nil:
-    if not input.node.visited:
-      input.node.update(dt)
-    if input.node.stopped:
-      if input.previous == nil:
-        self.firstInput = input.next
+  {.gcsafe.}:
+    self.visited = true
+    var input = self.firstInput
+    while input != nil:
+      if not input.node.visited:
+        input.node.update(dt)
+      if input.node.stopped:
+        if input.previous == nil:
+          self.firstInput = input.next
+        else:
+          input.previous.next = input.next
+        if input.next == nil:
+          self.lastInput = input.previous
+        else:
+          input.next.previous = input.previous
+        input.node.releaseRef()
+        var toFree = input
+        input = input.next
+        freeShared(toFree)
       else:
-        input.previous.next = input.next
-      if input.next == nil:
-        self.lastInput = input.previous
-      else:
-        input.next.previous = input.previous
-      input.node.releaseRef()
-      var toFree = input
-      input = input.next
-      freeShared(toFree)
+        input = input.next
+    if self.stopOnNoInput and self.firstInput == nil:
+      self.stop()
     else:
-      input = input.next
-  if self.stopOnNoInput and self.firstInput == nil:
-    self.stop()
-  else:
-    self.updateOutputs(dt)
+      self.updateOutputs(dt)
 
 
 ####################
