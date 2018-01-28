@@ -37,10 +37,9 @@ type
 
 let signals = @[Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin,
                   Signal.computer,
-                  Signal.gibberish, Signal.gibberish, Signal.gibberish, Signal.gibberish, Signal.gibberish, Signal.gibberish, Signal.gibberish,
+                  Signal.gibberish, Signal.gibberish, Signal.gibberish, Signal.gibberish, Signal.gibberish, Signal.gibberish,
                   Signal.chain, Signal.computer,
                   Signal.chain, Signal.computer,
-                  Signal.chain, Signal.chain, Signal.computer,
                   Signal.chain, Signal.gibberish,
                   Signal.chain, Signal.chain, Signal.chain, Signal.special]
 
@@ -52,6 +51,9 @@ proc randomCoord: Vector2 =
 
 var signalNodes : seq[SignalAttenuatorNode]
 signalNodes = @[]
+
+var generated = false
+var firstUpdate = true
 
 proc generateSignal(coord : Vector2, topLevel: bool) =
   generateStar(coord, topLevel)
@@ -91,10 +93,12 @@ proc generateSignal(coord : Vector2, topLevel: bool) =
 
   if signal == Signal.chain:
     generateSignal(nextCoord, false)
-  
+
+proc init* () =
+  var camera = newCamera(vec2(0,0))
+
 proc generate* () =
   clearEntities()
-  var camera = newCamera(vec2(0,0))
   generateCrosshair()
   generateSpeedGauge()
   generateWaveform()
@@ -112,8 +116,18 @@ proc generate* () =
   playSound(newBackgroundNoiseNode(), -14, 0)
   for signalNode in signalNodes:
     playSound(signalNode, -1.0, 0.0)
+  
+  currentScreen = mainScreen
+
+  generated = true
 
 proc update* (dt: float) =
+  if not generated:
+    if firstUpdate:
+      firstUpdate = false
+      return
+    generate()
+
   var i = 0
   while i <= entities.high:
     entities[i].update(dt)
@@ -133,6 +147,8 @@ proc update* (dt: float) =
   mainCamera.update(dt)
 
 proc render* () =
+  if not generated:
+    return
   glPushMatrix()
   let scale = 1.0 / 7.5
   glScaled(scale, scale, 1)

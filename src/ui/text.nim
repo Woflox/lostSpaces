@@ -112,6 +112,7 @@ type
     style: TextStyle
 
 let hudTextStyle* = TextStyle(color: color(1,0.85,0.5,1), size: 0.035)
+let titleTextStyle* = TextStyle(color: color(1,1,1,1), size: 0.035)
 
 proc setText* (self: TextObject, text: string) =
   self.text = text

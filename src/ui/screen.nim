@@ -24,7 +24,13 @@ var yCoordLabel = newTextObject("0000", hudTextStyle, vec2(0.25, -0.4), HAlign.c
 mainScreen.innerELements.add(xCoordLabel)
 mainScreen.innerELements.add(yCoordLabel)
 
-var currentScreen* = mainScreen
+let titleScreen* = newScreen()
+
+var titleLabel = newTextObject("LOST_TRANSMISSIONS", titleTextStyle, vec2(0, 0), HAlign.center, VAlign.center)
+
+titleScreen.innerElements.add(titleLabel)
+
+var currentScreen* = titleScreen
 
 method update* (self: Screen, dt: float) =
   xCoordLabel.setText(convertToText(crosshairPos.x, true)) 
