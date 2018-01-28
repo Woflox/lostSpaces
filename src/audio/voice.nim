@@ -92,4 +92,4 @@ proc say*(text: string) =
   spawn createAndPlayVoiceNode(text)
 
 proc newWeirdVoiceNode* (text: string): VoiceNode =
-  return newVoiceNode(text, true, random(0.75, 1.5), random(1.0, 1.5), random(0.5, 1.5))
+  return newVoiceNode(text, true, random(0.75, 1.5), random(1.0, 1.4), random(0.5, 1.5))
