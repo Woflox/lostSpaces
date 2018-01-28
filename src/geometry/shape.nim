@@ -3,7 +3,7 @@ import ../util/util
 
 type
   DrawStyle* {.pure.} = enum
-    none, line, filledOutline, solid
+    none, line, filledOutline, solid, point
   CollisionType* {.pure.} = enum
     none, discrete, continuous
   Shape* = object
@@ -143,7 +143,8 @@ proc renderLine* (self: Shape) =
   glColor4d(self.lineColor)
   for i in 0..<self.vertices.high:
     glVertex2d(self.vertices[i])
-    glVertex2d(self.vertices[i+1])
+    if self.drawStyle != DrawStyle.point:
+      glVertex2d(self.vertices[i+1])
   if self.closed:
     glVertex2d(self.vertices[self.vertices.high])
     glVertex2d(self.vertices[0])

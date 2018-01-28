@@ -8,7 +8,7 @@ import flite
 # Audio settings requested:
 const bufferSizeInSamples = 1024
 const bytesPerSample = 2  # 16 bit PCM
-const sampleRate = 44100    # Hz
+const sampleRate = 22050    # Hz
 var obtained: AudioSpec # Actual audio parameters SDL returns
 
 type
@@ -28,6 +28,9 @@ type
     stopOnNoInput: bool
     refCount: int
   AudioNode* = ptr AudioNodeObj
+
+var rawAudioOutput*: array[0..300, AudioSample]
+var rawAudioOutputIndex* = 0
 
 iterator inputs*(self: AudioNode): AudioInput =
   var input = self.firstInput
@@ -78,6 +81,9 @@ proc dbToAmplitude*(db: float): float =
 method updateOutputs*(self: AudioNode, dt: float) =
   discard
 
+method isSilent*(self: AudioNode): bool =
+  false
+
 proc stop*(self: AudioNode) =
   self.stopped = true
 
@@ -89,6 +95,9 @@ proc setUnvisited(self: AudioNode) =
 proc update(self: AudioNode, dt: float) =
   {.gcsafe.}:
     self.visited = true
+    if self.isSilent():
+      return
+
     var input = self.firstInput
     while input != nil:
       if not input.node.visited:
@@ -166,8 +175,8 @@ method updateOutputs(self: LimiterNode, dt: float) =
       multiplier = newLimit
       self.timeSinceLimit = 0
 
-  self.output[0] = input[0] * multiplier
-  self.output[1] = input[1] * multiplier
+  self.output[0] = input[0] * multiplier / self.threshold
+  self.output[1] = input[1] * multiplier / self.threshold
 
 ###################
 #
@@ -201,9 +210,11 @@ method updateOutputs(self: BitcrusherNode, dt: float) =
 ###################
 
 #signal chain setup
-var masterLimiter = newLimiterNode(threshold = 0, release = 2)
+var masterLimiter = newLimiterNode(threshold = -5, release = 0.1)
 var masterMixer = newMixerNode()
-masterLimiter.addInput(masterMixer)
+var masterBitCrusher = newBitCrusherNode(6)
+masterBitCrusher.addInput(masterMixer)
+masterLimiter.addInput(masterBitCrusher)
 
 proc playSound*(node: AudioNode, volume, pan: float) =
   #TODO: add ducking priority param to choose parent node; side chain compression
@@ -220,8 +231,10 @@ proc audioCallback(userdata: pointer; stream: ptr uint8; len: cint) {.cdecl, thr
     var rightSamplePtr = cast[ptr int16](cast[int](leftSamplePtr) + bytesPersample)
     masterLimiter.setUnvisited()
     masterLimiter.update(dt)
-    leftSamplePtr[] = int16(masterLimiter.output[0] * float(int16.high))
-    rightSamplePtr[] = int16(masterLimiter.output[1] * float(int16.high))
+    leftSamplePtr[] = int16(masterLimiter.output[0] * dbToAmplitude(-8) * float(int16.high))
+    rightSamplePtr[] = int16(masterLimiter.output[1] * dbToAmplitude(-8) * float(int16.high))
+    rawAudioOutputIndex = (rawAudioOutputIndex + 1) mod rawAudioOutput.len
+    rawAudioOutput[rawAudioOutputIndex] = masterLimiter.output
     i += 2
 
 proc initAudio* =

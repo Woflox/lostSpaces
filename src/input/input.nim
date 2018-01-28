@@ -7,8 +7,11 @@ import ../ui/text
 import tables
 
 var
-  stickMoveDir: Vector2
+  leftStickMoveDir*: Vector2
+  rightStickMoveDir*: Vector2
   buttonMoveDir: Vector2
+  leftTrigger: float
+  rightTrigger: float
   controller: GameControllerPtr
 
 type
@@ -24,7 +27,7 @@ type
     released: bool
 
 const maxAxisValue = 32768.0
-const deadZone = 0.2
+const deadZone = 0.1
 
 var
   controls* = [Control(action: left,  key: K_LEFT,  button: SDL_CONTROLLER_BUTTON_DPAD_LEFT),
@@ -49,10 +52,29 @@ proc handleEvent(event: var Event) =
       case event.caxis.axis:
         of uint8(SDL_CONTROLLER_AXIS_LEFTX):
           let axisValue = float(event.caxis.value) / maxAxisValue
-          stickMoveDir.x = if abs(axisValue) > deadZone: axisValue else: 0
+          leftStickMoveDir.x = if abs(axisValue) > deadZone: axisValue else: 0
         of uint8(SDL_CONTROLLER_AXIS_LEFTY):
           let axisValue = float(event.caxis.value) / maxAxisValue
-          stickMoveDir.y = if abs(axisValue) > deadZone: -axisValue else: 0
+          leftStickMoveDir.y = if abs(axisValue) > deadZone: -axisValue else: 0
+        of uint8(SDL_CONTROLLER_AXIS_RIGHTX):
+          let axisValue = float(event.caxis.value) / maxAxisValue
+          if axisValue > 0:
+            rightStickMoveDir.x = if abs(axisValue) > deadZone: (axisValue - deadZone) / (1 - deadZone) else: 0
+          else:
+            rightStickMoveDir.x = if abs(axisValue) > deadZone: (axisValue + deadZone) / (1 - deadZone) else: 0
+        of uint8(SDL_CONTROLLER_AXIS_RIGHTY):
+          let axisValue = float(event.caxis.value) / maxAxisValue
+          if axisValue > 0:
+            rightStickMoveDir.y = if abs(axisValue) > deadZone: (axisValue - deadZone) / (1 - deadZone) else: 0
+          else:
+            rightStickMoveDir.y = if abs(axisValue) > deadZone: (axisValue + deadZone) / (1 - deadZone) else: 0
+
+        of uint8(SDL_CONTROLLER_AXIS_TRIGGERLEFT):
+          let axisValue = float(event.caxis.value) / maxAxisValue
+          leftTrigger = axisValue
+        of uint8(SDL_CONTROLLER_AXIS_TRIGGERRIGHT):
+          let axisValue = float(event.caxis.value) / maxAxisValue
+          rightTrigger = axisValue
         else:
           discard
 
@@ -101,8 +123,8 @@ proc startText* () =
 proc stopText* () =
   stopTextInput()
 
-proc moveDir*(): Vector2 =
-  result = if stickMoveDir == vec2(0, 0): buttonMoveDir else: stickMoveDir.normalize()
+#proc moveDir*(): Vector2 =
+#  result = if stickMoveDir == vec2(0, 0): buttonMoveDir else: stickMoveDir.normalize()
 
 proc init*() =
   for i in 0..(numJoysticks() - 1):

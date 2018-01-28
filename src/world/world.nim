@@ -6,344 +6,116 @@ import ../util/random
 import ../geometry/shape
 import ../audio/audio
 import ../audio/voice
+import ../audio/signalAttenuator
 import ../audio/prose
 import ../audio/ambient
+import ../audio/backgroundnoise
+import ../audio/computernoise
+import ../audio/theraminnoise
+import ../audio/markovtext
 import ../ui/text
 import ../ui/uiobject
 import ../ui/screen
-import ../entity/tileObject
 import ../globals/globals
-import ../entity/floor
-import ../entity/background
-import ../entity/character
-import ../entity/door
+import ../entity/star
+import ../entity/crosshair
+import ../entity/speedgauge
+import ../entity/waveform
 from ../input/input import nil
 from ../entity/camera import nil
 import math
 import strutils
 import os
 
-var lineGroup = newLineGroup(@[])
+const maxSignals = 30
+var numSignals = 0
 
-type
-  LevelScreen = ref object
-    poemLine: string
-    tiles: seq[LineObject]
-  Level = ref object
-    number: int
-    screens: seq[LevelScreen]
+const topLevelWeights = @[0.5, #theramin
+                        0.1, #computer
+                        0.19, #chain
+                        0.21 #weird voice
+                        ]
 
-var levels: seq[Level]
-levels = @[]
+const chainWeights = @[0.0, #theramin
+                     0.3, #computer
+                     0.55, #chain
+                     0.15 #weird voice
+                    ]
 
-var currentLevel: Level
-var currentLevelScreen = 0
+proc randomCoord: Vector2 =
+  return vec2((uniformRandom() - 0.5) * scanAreaWidth, 
+              (uniformRandom() - 0.5) * scanAreaHeight)
 
-var maxSpeechScreen = -1
+var signalNodes : seq[SignalAttenuatorNode]
+signalNodes = @[]
 
-proc setPallette(levelNum: int) =
-
-  if levelNum == -1:
-    pallette[2] = color(1,1,1) * 0.0625
+proc generateSignal(coord : Vector2, topLevel: bool) =
+  numSignals += 1
+  if numSignals > maxSignals:
     return
 
-  seed(levelNum * 1000)
+  generateStar(coord, topLevel)
 
-  var mainColor1 = color(uniformRandom(), uniformRandom(), uniformRandom())
-  var fullColorIndex = random(0, 2)
-  var halfColorIndex = (fullColorIndex + random(1, 2)) mod 3
-  mainColor1[fullColorIndex] = 1
-  mainColor1[halfColorIndex] = mainColor1[halfColorIndex] * 0.5
+  let weights = if topLevel: topLevelWeights else: chainWeights
 
-  var mainColor2 = color(uniformRandom(), uniformRandom(), uniformRandom())
-  halfColorIndex = fullColorIndex
-  fullColorIndex = (halfColorIndex + random(1, 2)) mod 3
-  mainColor2[fullColorIndex] = 1
-  mainColor2[halfColorIndex] = mainColor2[halfColorIndex] * 0.5
+  let u = uniformRandom()
+  var weightAccumulator = 0.0
+  var selectedSignal = 0
+  for i in 0..weights.high:
+    selectedSignal = i
+    weightAccumulator += weights[i]
+    if weightAccumulator >= u:
+      break
+  var signalNode: AudioNode
+  var chain = false
 
-  pallette[0] = mainColor1
-  pallette[1] = mainColor2
-  pallette[2] = randomColor() * 0.0625
-
-
-proc newLevelScreen(): LevelScreen =
-  LevelScreen(poemLine: "", tiles: @[])
-
-proc generateLevel* (number: int): Level =
-  result = Level(number: number, screens: @[])
-  seed(number * 1000)
-
-  for i in 0..numLevelScreens-1:
-    if i mod 2 == 0:
-      if number > 0:
-        result.screens.add(levels[random(0, number-1)].screens[i+1])
+  let nextCoord = randomCoord()
+  case selectedSignal:
+    of 0:
+      signalNode = newTheraminNoiseNode()
+    of 1:
+      signalNode = newComputerNoiseNode()
+    of 2:
+      if numSignals < maxSignals:
+        chain = true
+        signalNode = newWeirdVoiceNode(convertToSpeakableText(nextCoord))
       else:
-        var screen = newLevelScreen()
-        for i in 0..<16:
-          let obj = newLineObject(random(0, numTilesX), random(0, numTilesY), random(0, 7), random(0, 1))
-          screen.tiles.add(obj)
-        screen.poemLine = getProse()
-        result.screens.add(screen)
+        signalNode = newWeirdVoiceNode(getMarkovString(120))
+    of 3:
+      signalNode = newWeirdVoiceNode(getMarkovString(120))
     else:
-      result.screens.add(newLevelScreen())
+      return
+  
+  var signalStrength =  random(-6.0, -1.0)
+  var signalRadius = relativeRandom(1.5, 2)
+  if not topLevel: 
+    signalStrength = random(-3.0, -1.0)
+    signalRadius =  relativeRandom(0.125, 2)
 
-proc serialize(self: Level) =
-  var file = open($(self.number) & ".lvl", fmWrite)
-  for screen in self.screens:
-    file.writeln(screen.poemLine)
-    for tile in screen.tiles:
-      file.writeln(tile.x)
-      file.writeln(tile.y)
-      file.writeln(tile.tileRotation)
-      file.writeln(tile.palletteIndex)
+  var signalAttenuatorNode = newSignalAttenuatorNode(coord, signalStrength, signalRadius)
+  signalAttenuatorNode.addInput(signalNode)
+  signalNodes.add(signalAttenuatorNode)
 
-proc unserializeLevel(number: int): Level =
-  result = Level(number: number, screens: @[])
-
-  var file = open($(number) & ".lvl")
-
-  for i in 0..<8:
-    var screen = newLevelScreen()
-    screen.poemLine = file.readline()
-    for j in 0..<16:
-      var lineObject = newLineObject()
-      lineObject.x = file.readline().parseInt()
-      lineObject.y = file.readline().parseInt()
-      lineObject.tileRotation = file.readline().parseInt()
-      lineObject.palletteIndex = file.readline().parseInt()
-      screen.tiles.add(lineObject)
-    result.screens.add(screen)
-
-
-proc setGameState(st: GameState) =
-  gameState = st
-  stateTime = 0
-  case gameState:
-    of GameState.textEntry:
-      currentScreen = writingScreen
-    of GameState.drawing:
-      currentScreen = drawingScreen
-    of GameState.exploring:
-      currentScreen = exploringScreen
-
-proc startTextEntry* =
-  setGameState(GameState.textEntry)
-  let previousLine = currentLevel.screens[currentLevelScreen].poemLine
-  currentPoem.add(previousLine)
-  #say(previousLine)
-  startedTalking = false
-  talkProgress = 0
-  timeAfterTalkFinished = 0
-  poemTextEntered = ""
-  inc currentLevelScreen
-  clearEntities()
-  generateFloor(false, false)
-  #generateBackground()
-
-proc startNewLineGroup* =
-  lineGroup = newLineGroup(@[])
-  let screen = currentLevel.screens[currentLevelScreen]
-  if screen.tiles.len mod 8 == 0:
-    if currentLevel.number > 0:
-      let randomLevel = levels[random(0, currentLevel.number-1)]
-      for i in 0..<4:
-        let lineObj = randomLevel.screens[currentLevelScreen].tiles[screen.tiles.high + i + 4]
-        lineGroup.tiles.add(newLineObject(lineObj.x, lineObj.y, lineObj.tileRotation, lineObj.palletteIndex))
-    else:
-      for i in 0..3:
-        let obj = newLineObject(random(0, numTilesX), random(0, numTilesY), random(0, 7), random(0, 1))
-        lineGroup.tiles.add(obj)
-  else:
-    let obj = newLineObject(random(0, numTilesX), random(0, numTilesY), random(0, 7), random(0, 1))
-    lineGroup.tiles.add(obj)
-  for tile in lineGroup.tiles:
-    screen.tiles.add(tile)
-    addEntity(tile)
-
-proc startDrawing* =
-  setGameState(GameState.drawing)
-  startNewLineGroup()
-
-proc startBuildLevel* (number: int) =
-  currentLevelScreen = 0
-
-  maxSpeechScreen = -1
-
-  currentLevel = generateLevel(number)
-
-  setPallette(number)
-  pallette[2] = color(0,0,0)
-  levels.add(currentLevel)
-  currentPoem = @[]
-  startTextEntry()
-  killMusic = true
-
-proc loadScreen* (screenNumber: int, fromRight: bool = false, atDoor: bool = false, doorNum: int = 0) =
-  setGameState(GameState.exploring)
-  currentLevelScreen = screenNumber
-  clearEntities()
-  if onHubLevel:
-    seed(43215 + 4351 * screenNumber)
-  else:
-    seed(43215 + 33 * currentLevel.number + 4351 * screenNumber)
-
-  var leftWall = screenNumber == -1
-  var rightWall = if onHubLevel: screenNumber == (levels.high + 1) div doorsPerScreen else: screenNumber == 8
-
-  generateFloor(leftWall, rightWall)
-  generateBackground()
-  generateCharacter(if fromRight: screenEdge elif atDoor: getDoorX(doorNum) else: -screenEdge, if fromRight: -1 else: 1)
-
-  startedTalking = false
-
-  if (maxSpeechScreen >= screenNumber):
-    startedTalking = true
-
-  caption = ""
-  exitDoorText = ""
-  for i in 0..<doorsPerScreen:
-    normalDoorTexts[i] = ""
-
-  if onHubLevel:
-    if screenNumber == -1:
-      generateDoor(0, -2)
-      exitDoorText = "EXIT"
-      startedTalking = true
-    else:
-      for i in 0..3:
-        let doorNum = i + screenNumber * doorsPerScreen
-        if doorNum <= levels.len:
-          generateDoor(getDoorX(doorNum), doorNum)
-        if doorNum < levels.len:
-          normalDoorTexts[i] = $doorNum
-        if doorNum == levels.len:
-          normalDoorTexts[i] = "NEW"
-    return
-
-  if screenNumber >= 0 and screenNumber < 8:
-    for tile in currentLevel.screens[currentLevelScreen].tiles:
-      addEntity(tile)
-    caption = currentLevel.screens[currentLevelScreen].poemLine
-  else:
-    if screenNumber == 8:
-      generateDoor(0, -1)
-
-
-proc startExplore* (number: int) =
-
-  if number == -2:
-    quit()
-
-  maxSpeechScreen = -1
-  setGameState(GameState.exploring)
-  setPallette(number)
-  echo number
-  if number == -1:
-    echo "hubLevel"
-    onHubLevel = true
-    let screen = currentLevel.number div doorsPerScreen
-    loadScreen(screen, false, true, currentLevel.number)
-  else:
-    onHubLevel = false
-    seed(number * 1000)
-    currentLevel = levels[number]
-    loadScreen(-1)
-
-proc playMusic() =
-  killMusic = false
-  playSound(newChordNode(), -4.0, -0.3)
-  playSound(newChordNode(), -4.0, 0.3)
-
+  if chain:
+    generateSignal(nextCoord, false)
+  
 proc generate* () =
   clearEntities()
   var camera = newCamera(vec2(0,0))
+  generateCrosshair()
+  generateSpeedGauge()
+  generateWaveform()
+  calculateMarkovTable()
+  for i in 0..(2000-maxSignals):
+    generateStar(randomCoord(), false)
 
-  var levelNum = 0
-  while fileExists($levelNum & ".lvl"):
-    levels.add(unserializeLevel(levelNum))
-    levelNum += 1
-  startBuildLevel(levelNum)
+  
+  while numSignals < maxSignals:
+    generateSignal(randomCoord(), true)
 
-proc updateTextEntry(dt: float) =
-  if talkProgress >= 1.0:
-    if input.enteredText == "\b":
-      if poemTextEntered.len > 0:
-        poemTextEntered = poemTextEntered[0 .. <poemTextEntered.high]
-    else:
-      poemTextEntered &= input.enteredText
-    if input.buttonPressed(input.confirm) and poemTextEntered.len > 0:
-      currentLevel.screens[currentLevelScreen].poemLine = poemTextEntered
-      currentPoem.add(poemTextEntered)
-      startDrawing()
-    timeAfterTalkFinished += dt
-  else:
-    if stateTime > 1:
-      if not startedTalking:
-        startedTalking = true
-        say(currentPoem[currentPoem.high])
-      talkProgress = (stateTime - 1) / (0.075 * float(currentPoem[currentPoem.high].len))
-
-
-proc finishBuildLevel() =
-  currentLevel.serialize()
-  startExplore(currentLevel.number)
-  playMusic()
-
-proc updateDrawing(dt: float) =
-  if input.buttonPressed(input.rotateLeft):
-    lineGroup.rotate(RotateDirection.counterClockwise)
-  if input.buttonPressed(input.rotateRight):
-    lineGroup.rotate(RotateDirection.clockwise)
-  if input.buttonPressed(input.cycleColor):
-    lineGroup.cycleColor()
-  if input.buttonPressed(input.left):
-    lineGroup.translate(-1, 0)
-  if input.buttonPressed(input.right):
-    lineGroup.translate(1, 0)
-  if input.buttonPressed(input.up):
-    lineGroup.translate(0, 1)
-  if input.buttonPressed(input.down):
-    lineGroup.translate(0, -1)
-  if input.buttonPressed(input.place):
-    if currentLevel.screens[currentLevelScreen].tiles.len >= 16:
-      if currentLevelScreen >= 7:
-        finishBuildLevel()
-      else:
-        inc currentLevelScreen
-        startTextEntry()
-    else:
-      startNewLineGroup()
-
-proc enterDoor(number: int) =
-  if number < levels.len:
-    startExplore(number)
-  else:
-    startBuildLevel(levels.len)
-
-proc updateExploring(dt: float) =
-  var character = entityOfType[Character]()
-
-  if onHubLevel:
-    if character.position.x == screenEdge and currentLevelScreen < (levels.high + 1) div doorsPerScreen:
-      loadScreen(currentLevelScreen + 1)
-    if character.position.x == -screenEdge and currentLevelScreen > -1:
-      loadScreen(currentLevelScreen - 1, true)
-  else:
-    if character.position.x == screenEdge and currentLevelScreen < 8:
-      loadScreen(currentLevelScreen + 1)
-    if character.position.x == -screenEdge and currentLevelScreen > -1:
-      loadScreen(currentLevelScreen - 1, true)
-
-  if stateTime > 1 and not startedTalking:
-    startedTalking = true
-    maxSpeechScreen = max(currentLevelScreen, maxSpeechScreen)
-    say(caption)
-
-  if input.buttonPressed(input.up) or input.buttonPressed(input.place) or input.buttonPressed(input.confirm):
-    for door in entitiesOfType[Door]():
-      if abs(door.position.x - character.position.x) < 10:
-        enterDoor(door.number)
-
+  playSound(newBackgroundNoiseNode(), -10, 0)
+  for signalNode in signalNodes:
+    playSound(signalNode, -1.0, 0.0)
 
 proc update* (dt: float) =
   var i = 0
@@ -362,51 +134,26 @@ proc update* (dt: float) =
     else:
       inc i
 
-  case gameState:
-    of GameState.textEntry:
-      updateTextEntry(dt)
-    of GameState.drawing:
-      updateDrawing(dt)
-    of GameState.exploring:
-      updateExploring(dt)
-
-  stateTime += dt
-
   mainCamera.update(dt)
 
 proc render* () =
   glPushMatrix()
-  let scale = 1 / ((numTilesY) * tileSize)
+  let scale = 1.0 / 7.5
   glScaled(scale, scale, 1)
+  glTranslated(0, 1.25, 0)
 
   glEnable (GL_BLEND);
   glBlendFunc (GL_ONE, GL_ONE_MINUS_SRC_COLOR);
-  glBegin(GL_TRIANGLES)
-  for entity in entitiesOfType[LineObject]():
-    entity.renderSolid()
-  glEnd()
-  glBlendFunc (GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR)
-  glBegin(GL_TRIANGLES)
-  for entity in entitiesOfType[Rock]():
-    entity.renderSolid()
-  glEnd()
-  glBlendFunc(GL_ONE, GL_ZERO)
-  glBegin(GL_TRIANGLES)
-  entityOfType[Floor]().renderSolid()
-  for entity in entitiesOfType[Door]():
-    entity.renderSolid()
+  glBegin(GL_POINTS)
+  for entity in entitiesOfType[Star]():
+    entity.renderLine()
   glEnd()
   glBegin(GL_LINES)
-  entityOfType[Floor]().renderLine()
+  entityOfType[Crosshair]().renderLine();
+  entityOfType[Waveform]().renderLine();
   glEnd()
-  glBlendFunc (GL_ONE, GL_ONE_MINUS_SRC_COLOR);
-  glBegin(GL_LINES)
-  for entity in entitiesOfType[LineObject]():
-    entity.renderLine()
-  for entity in entitiesOfType[NormalDrawEntity]():
-    entity.renderLine()
-  for entity in entitiesOfType[Door]():
-    entity.renderLine()
+  glBegin(GL_TRIANGLES)
+  entityOfType[SpeedGauge]().renderSolid();
   glEnd()
   glBegin(GL_TRIANGLES)
   for entity in entitiesOfType[NormalDrawEntity]():
