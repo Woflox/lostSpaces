@@ -11,6 +11,9 @@ var
   screenWidth*, screenHeight*: int
   screenAspectRatio*: float
   crosshairPos*: Vector2
+  specialSignalPos*: Vector2
+
+  #OLD STUFF
   pallette*: array[0..2, Color]
   gameState*: GameState
   currentPoem*: seq[string] = @[]
@@ -26,6 +29,10 @@ var
 const
   scanAreaWidth* = 16
   scanAreaHeight* = 8
+  specialSignalRadius* = 0.125
+  measureLength* = 1.5
+
+  #OLD STUFF
   numTilesX* = 8
   numTilesY* = 8
   tileSize* = 10.0

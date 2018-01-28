@@ -22,6 +22,7 @@ import ../entity/star
 import ../entity/crosshair
 import ../entity/speedgauge
 import ../entity/waveform
+import ../entity/pulser
 from ../input/input import nil
 from ../entity/camera import nil
 import math
@@ -80,6 +81,7 @@ proc generateSignal(coord : Vector2, topLevel: bool, forceChain = false) =
     special = true
     madeSpecialSignal = true
     signalNode = newSongNode()
+    specialSignalPos = coord
   else:
     case selectedSignal:
       of 0:
@@ -101,7 +103,7 @@ proc generateSignal(coord : Vector2, topLevel: bool, forceChain = false) =
     signalRadius =  relativeRandom(0.125, 2)
   if special:
     signalStrength = -1.0
-    signalRadius = 0.125
+    signalRadius = specialSignalRadius
 
   var signalAttenuatorNode = newSignalAttenuatorNode(coord, signalStrength, signalRadius)
   signalAttenuatorNode.addInput(signalNode)
@@ -123,6 +125,8 @@ proc generate* () =
   
   while numSignals < maxSignals or (not madeSpecialSignal):
     generateSignal(randomCoord(), true, numSignals >= maxSignals)
+    
+  generatePulser()
 
   echo numSignals
   playSound(newBackgroundNoiseNode(), -14, 0)
@@ -166,6 +170,10 @@ proc render* () =
   glEnd()
   glBegin(GL_TRIANGLES)
   entityOfType[SpeedGauge]().renderSolid();
+  glEnd()
+  glBlendFunc (GL_ONE, GL_ONE);
+  glBegin(GL_TRIANGLES)
+  entityOfType[Pulser]().renderSolid();
   glEnd()
   glBegin(GL_TRIANGLES)
   for entity in entitiesOfType[NormalDrawEntity]():

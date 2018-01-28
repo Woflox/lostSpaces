@@ -12,7 +12,6 @@ type
   DrumPatternNode* = ptr DrumPatternNodeObj
 
 const
-  measureLength = 1.5
   kickBaseFrequency = 120.0
   kickDrop = 0.01
   kickRelease = 0.25
