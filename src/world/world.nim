@@ -13,6 +13,7 @@ import ../audio/backgroundnoise
 import ../audio/computernoise
 import ../audio/theraminnoise
 import ../audio/markovtext
+import ../audio/song
 import ../ui/text
 import ../ui/uiobject
 import ../ui/screen
@@ -29,6 +30,7 @@ import os
 
 const maxSignals = 30
 var numSignals = 0
+var madeSpecialSignal = false
 
 const topLevelWeights = @[0.5, #theramin
                         0.1, #computer
@@ -49,9 +51,9 @@ proc randomCoord: Vector2 =
 var signalNodes : seq[SignalAttenuatorNode]
 signalNodes = @[]
 
-proc generateSignal(coord : Vector2, topLevel: bool) =
+proc generateSignal(coord : Vector2, topLevel: bool, forceChain = false) =
   numSignals += 1
-  if numSignals > maxSignals:
+  if numSignals > maxSignals and madeSpecialSignal:
     return
 
   generateStar(coord, topLevel)
@@ -68,29 +70,38 @@ proc generateSignal(coord : Vector2, topLevel: bool) =
       break
   var signalNode: AudioNode
   var chain = false
-
+  var special = false
   let nextCoord = randomCoord()
-  case selectedSignal:
-    of 0:
-      signalNode = newTheraminNoiseNode()
-    of 1:
-      signalNode = newComputerNoiseNode()
-    of 2:
-      if numSignals < maxSignals:
+
+  if forceChain:
+    chain = true
+    signalNode = newWeirdVoiceNode(convertToSpeakableText(nextCoord))
+  elif (not topLevel) and ((selectedSignal != 2)) and (not madeSpecialSignal):
+    special = true
+    madeSpecialSignal = true
+    signalNode = newSongNode()
+  else:
+    case selectedSignal:
+      of 0:
+        signalNode = newTheraminNoiseNode()
+      of 1:
+        signalNode = newComputerNoiseNode()
+      of 2:
         chain = true
         signalNode = newWeirdVoiceNode(convertToSpeakableText(nextCoord))
-      else:
+      of 3:
         signalNode = newWeirdVoiceNode(getMarkovString(120))
-    of 3:
-      signalNode = newWeirdVoiceNode(getMarkovString(120))
-    else:
-      return
+      else:
+        return
   
   var signalStrength =  random(-6.0, -1.0)
   var signalRadius = relativeRandom(1.5, 2)
   if not topLevel: 
     signalStrength = random(-3.0, -1.0)
     signalRadius =  relativeRandom(0.125, 2)
+  if special:
+    signalStrength = -1.0
+    signalRadius = 0.125
 
   var signalAttenuatorNode = newSignalAttenuatorNode(coord, signalStrength, signalRadius)
   signalAttenuatorNode.addInput(signalNode)
@@ -110,10 +121,11 @@ proc generate* () =
     generateStar(randomCoord(), false)
 
   
-  while numSignals < maxSignals:
-    generateSignal(randomCoord(), true)
+  while numSignals < maxSignals or (not madeSpecialSignal):
+    generateSignal(randomCoord(), true, numSignals >= maxSignals)
 
-  playSound(newBackgroundNoiseNode(), -10, 0)
+  echo numSignals
+  playSound(newBackgroundNoiseNode(), -14, 0)
   for signalNode in signalNodes:
     playSound(signalNode, -1.0, 0.0)
 

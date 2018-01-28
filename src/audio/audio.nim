@@ -128,7 +128,7 @@ proc update(self: AudioNode, dt: float) =
 #  MixerNode
 
 type
-  MixerNodeObj = object of AudioNodeObj
+  MixerNodeObj* = object of AudioNodeObj
   MixerNode = ptr MixerNodeObj
 
 proc newMixerNode(): MixerNode =

@@ -14,24 +14,29 @@ type
     fadeTime: float
     timeFaded: float
     killTimeFaded: float
+    lowNote: bool
   ChordNode* = ptr ChordNodeObj
 
 const
   noiseFrequency = 0.5
   noiseOctaves = 3
+  lowNoteMultiplier = 0.25
 
 const frequencies = [329.63, 392.00, 440.00, 493.88, 587.33]
 
 proc getFadeTime: float =
   relativeRandom(6, 2)
 
-proc newChordNode*(): ChordNode =
+proc newChordNode*(lowNote = false): ChordNode =
   result = createShared(ChordNodeObj)
   result[] = ChordNodeObj()
   result.fadingIn = true
   result.fadeTime = getFadeTime()
   result.freqA = frequencies[random(0,4)]
   result.freqB = frequencies[random(0,4)]
+  result.lowNote = lowNote
+  if lowNote:
+    result.freqA *= lowNoteMultiplier
   while result.freqB == result.freqA:
     result.freqB = frequencies[random(0,4)]
 
@@ -52,7 +57,7 @@ method updateOutputs*(self: ChordNode, dt: float) =
   const chorusFrequency = 0.1
   const nf = 300
   let noiseVal1 = (fractalNoise(self.t * chorusFrequency + 1000, noiseOctaves) + 1.0) / 2.0
-  let noiseVal2 = (fractalNoise(self.t * chorusFrequency + 2000.0, noiseOctaves) + 1.0) / 2.0
+  let noiseVal2 = noiseVal1#(fractalNoise(self.t * chorusFrequency + 2000.0, noiseOctaves) + 1.0) / 2.0
 
   if self.t > 2:
     self.timeFaded += dt
@@ -63,6 +68,8 @@ method updateOutputs*(self: ChordNode, dt: float) =
     self.timeFaded = 0
     if self.fadingIn:
       self.freqA = frequencies[random(0,4)]
+      if self.lowNote:
+        self.freqA *= lowNoteMultiplier
       self.freqB = frequencies[random(0,4)]
       while self.freqB == self.freqA:
         self.freqB = frequencies[random(0,4)]

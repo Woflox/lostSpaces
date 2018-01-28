@@ -11,20 +11,22 @@ type
     signalStrength: float
     signalRadius: float
     cutoffRadiusSquared: float
+    isSpecial: bool
   SignalAttenuatorNode* = ptr SignalAttenuatorNodeObj
 
 const dbAtRadius = -30 
 
-proc newSignalAttenuatorNode*(position: Vector2, signalStrength: float, signalRadius: float): SignalAttenuatorNode =
+proc newSignalAttenuatorNode*(position: Vector2, signalStrength: float, signalRadius: float, isSpecial = false): SignalAttenuatorNode =
   result = createShared(SignalAttenuatorNodeObj)
   result[] = SignalAttenuatorNodeObj()
   result.position = position
   result.signalStrength = signalStrength
   result.signalRadius = signalRadius
-  result.cutoffRadiusSquared = (signalRadius * 2) * (signalRadius * 2)
+  result.cutoffRadiusSquared = (signalRadius * 1.25) * (signalRadius * 1.25)
+  result.isSpecial  = isSpecial
 
 method isSilent*(self: SignalAttenuatorNode): bool =
-  return distanceSquared(self.position, crosshairPos) > self.cutoffRadiusSquared
+  return (not self.isSpecial) and distanceSquared(self.position, crosshairPos) > self.cutoffRadiusSquared
 
 method updateOutputs*(self: SignalAttenuatorNode, dt: float) =
   let d = distance(self.position, crosshairPos)

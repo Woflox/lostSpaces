@@ -18,6 +18,7 @@ const
   highNoiseFrequency = 1000
   positionalNoiseFrequency = 0.3
   noiseOctaves = 3
+  noiseDbChange = -8
 
 
 proc newBackgroundNoiseNode*(): BackgroundNoiseNode =
@@ -30,12 +31,12 @@ method updateOutputs*(self: BackgroundNoiseNode, dt: float) =
   let noiseVal2 = fractalNoise(self.t2 * lowNoiseFrequency + 1000.0 + self.perlinSeed, noiseOctaves)
   let noise1Intensity = 0.5 * (fractalNoise(crosshairPos.x * positionalNoiseFrequency + 1000 + self.perlinSeed,
                                       crosshairPos.y * positionalNoiseFrequency + 1000 + self.perlinSeed,
-                                      noiseOctaves) + 1.1) / 2.1
+                                      noiseOctaves) + 1) / 2
   let noise2Intensity = (fractalNoise(crosshairPos.x * positionalNoiseFrequency + 2000 + self.perlinSeed,
                                       crosshairPos.y * positionalNoiseFrequency + 2000 + self.perlinSeed, 
-                                      noiseOctaves) + 1.1) / 2.1
+                                      noiseOctaves) + 1) / 2
 
-  let outputValue = noiseVal1 * noise1Intensity + noiseVal2 * noise2Intensity
+  let outputValue = noiseVal1 * dbToAmplitude(noise1Intensity * noiseDbChange) + noiseVal2 * dbToAmplitude(noise2Intensity * noiseDbChange)
   self.output[0] = outputValue
   self.output[1] = outputValue
 
