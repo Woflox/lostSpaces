@@ -43,8 +43,6 @@ let signals = @[Signal.theramin, Signal.theramin, Signal.theramin, Signal.theram
                   Signal.chain, Signal.gibberish,
                   Signal.chain, Signal.chain, Signal.chain, Signal.special]
 
-echo signals.len
-
 proc randomCoord: Vector2 =
   return vec2((uniformRandom() - 0.5) * scanAreaWidth, 
               (uniformRandom() - 0.5) * scanAreaHeight)
