@@ -29,21 +29,22 @@ import math
 import strutils
 import os
 
-const maxSignals = 30
 var numSignals = 0
-var madeSpecialSignal = false
 
-const topLevelWeights = @[0.5, #theramin
-                        0.1, #computer
-                        0.19, #chain
-                        0.21 #weird voice
-                        ]
+type
+  Signal* {.pure.} = enum
+    theramin, computer, chain, gibberish, special
 
-const chainWeights = @[0.0, #theramin
-                     0.3, #computer
-                     0.55, #chain
-                     0.15 #weird voice
-                    ]
+let signals = @[Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin, Signal.theramin,
+                  Signal.computer,
+                  Signal.gibberish, Signal.gibberish, Signal.gibberish, Signal.gibberish, Signal.gibberish, Signal.gibberish, Signal.gibberish,
+                  Signal.chain, Signal.computer,
+                  Signal.chain, Signal.computer,
+                  Signal.chain, Signal.chain, Signal.computer,
+                  Signal.chain, Signal.gibberish,
+                  Signal.chain, Signal.chain, Signal.chain, Signal.special]
+
+echo signals.len
 
 proc randomCoord: Vector2 =
   return vec2((uniformRandom() - 0.5) * scanAreaWidth, 
@@ -52,56 +53,33 @@ proc randomCoord: Vector2 =
 var signalNodes : seq[SignalAttenuatorNode]
 signalNodes = @[]
 
-proc generateSignal(coord : Vector2, topLevel: bool, forceChain = false) =
-  numSignals += 1
-  if numSignals > maxSignals and madeSpecialSignal:
-    return
-
+proc generateSignal(coord : Vector2, topLevel: bool) =
   generateStar(coord, topLevel)
 
-  let weights = if topLevel: topLevelWeights else: chainWeights
-
-  let u = uniformRandom()
-  var weightAccumulator = 0.0
-  var selectedSignal = 0
-  for i in 0..weights.high:
-    selectedSignal = i
-    weightAccumulator += weights[i]
-    if weightAccumulator >= u:
-      break
   var signalNode: AudioNode
-  var chain = false
-  var special = false
   let nextCoord = randomCoord()
 
-  if forceChain:
-    chain = true
-    signalNode = newWeirdVoiceNode(convertToSpeakableText(nextCoord))
-  elif (not topLevel) and ((selectedSignal != 2)) and (not madeSpecialSignal):
-    special = true
-    madeSpecialSignal = true
-    signalNode = newSongNode()
-    specialSignalPos = coord
-  else:
-    case selectedSignal:
-      of 0:
-        signalNode = newTheraminNoiseNode()
-      of 1:
-        signalNode = newComputerNoiseNode()
-      of 2:
-        chain = true
-        signalNode = newWeirdVoiceNode(convertToSpeakableText(nextCoord))
-      of 3:
-        signalNode = newWeirdVoiceNode(getMarkovString(120))
-      else:
-        return
+  var signal = signals[numSignals]
+
+  case signal:
+    of Signal.theramin:  
+      signalNode = newTheraminNoiseNode()
+    of Signal.computer:  
+      signalNode = newComputerNoiseNode()
+    of Signal.chain:
+      signalNode = newWeirdVoiceNode(convertToSpeakableText(nextCoord))
+    of Signal.gibberish:  
+      signalNode = newWeirdVoiceNode(getMarkovString(120))
+    of Signal.special:  
+      signalNode = newSongNode()
+      specialSignalPos = coord
   
   var signalStrength =  random(-6.0, -1.0)
   var signalRadius = relativeRandom(1.5, 2)
   if not topLevel: 
     signalStrength = random(-3.0, -1.0)
     signalRadius =  relativeRandom(0.125, 2)
-  if special:
+  if signal == Signal.special:
     signalStrength = -1.0
     signalRadius = specialSignalRadius
 
@@ -109,7 +87,9 @@ proc generateSignal(coord : Vector2, topLevel: bool, forceChain = false) =
   signalAttenuatorNode.addInput(signalNode)
   signalNodes.add(signalAttenuatorNode)
 
-  if chain:
+  numSignals += 1
+
+  if signal == Signal.chain:
     generateSignal(nextCoord, false)
   
 proc generate* () =
@@ -119,12 +99,12 @@ proc generate* () =
   generateSpeedGauge()
   generateWaveform()
   calculateMarkovTable()
-  for i in 0..(2000-maxSignals):
+  for i in 0..2000:
     generateStar(randomCoord(), false)
 
   
-  while numSignals < maxSignals or (not madeSpecialSignal):
-    generateSignal(randomCoord(), true, numSignals >= maxSignals)
+  while numSignals < signals.len:
+    generateSignal(randomCoord(), true)
     
   generatePulser()
 

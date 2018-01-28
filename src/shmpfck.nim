@@ -16,7 +16,7 @@ if fullScreen:
   windowFlags = SDL_WINDOW_OPENGL or SDL_WINDOW_FULLSCREEN_DESKTOP
 
 discard init(INIT_EVERYTHING)
-var window = createWindow("LOST SPACES", 100, 100, 1280, 720, windowFlags)
+var window = createWindow("LOST TRANSMISSIONS", 100, 100, 1280, 720, windowFlags)
 var context = window.glCreateContext()
 
 proc resize() =

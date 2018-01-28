@@ -3,6 +3,7 @@ import math
 import ../globals/globals
 import ../geometry/shape
 import ../util/util
+import ../audio/audio
 import math
 from ../input/input import nil
 
@@ -29,14 +30,15 @@ proc generatePulser* =
   addEntity(pulser)
   
 method update (self: Pulser, dt: float) =
-  var d = distance(crosshairPos, specialSignalPos)
+  let d = distance(specialSignalPos, crosshairPos)
+
+  let falloff = pow(dbToAmplitude((-30.0) * d / specialSignalRadius), 1 / 2.2)
   
   let pulsing = 1 - (cos((self.t * PI * 2) / (measureLength / 2)) + 1.0) / 2.0
-  let intensity = max(0, 1 - d / specialSignalRadius)
 
-  let color = color(lerp(color1.r, color2.r, pulsing) * intensity,
-                    lerp(color1.g, color2.g, pulsing) * intensity,
-                    lerp(color1.b, color2.b, pulsing) * intensity,)
+  let color = color(lerp(color1.r, color2.r, pulsing) * falloff,
+                    lerp(color1.g, color2.g, pulsing) * falloff,
+                    lerp(color1.b, color2.b, pulsing) * falloff,)
 
   self.shapes[0].fillColor = color
 
