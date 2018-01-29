@@ -133,7 +133,6 @@ proc generate* () =
     
   generatePulser()
 
-  echo numSignals
   playSound(newBackgroundNoiseNode(), -14, 0)
   for signalNode in signalNodes:
     playSound(signalNode, -1.0, 0.0)
