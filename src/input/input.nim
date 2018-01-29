@@ -16,7 +16,7 @@ var
 
 type
   Action* = enum
-    left, right, up, down, rotateLeft, rotateRight, cycleColor, place, confirm
+    left, right, up, down, rotateLeft, rotateRight, cycleColor, place, confirm, exit
 
   Control = ref object
     action: Action
@@ -38,7 +38,8 @@ var
                Control(action: rotateRight, key: K_D, button: SDL_CONTROLLER_BUTTON_B),
                Control(action: cycleColor, key: K_S,  button: SDL_CONTROLLER_BUTTON_X),
                Control(action: place, key: K_SPACE,    button: SDL_CONTROLLER_BUTTON_Y),
-               Control(action: confirm, key: K_RETURN, button: SDL_CONTROLLER_BUTTON_START)]
+               Control(action: confirm, key: K_RETURN, button: SDL_CONTROLLER_BUTTON_START),
+               Control(action: exit, key: K_ESCAPE, button: SDL_CONTROLLER_BUTTON_MAX)]
 
   events = initQueue[Event]()
   enteredText*: string

@@ -166,6 +166,9 @@ proc update* (dt: float) =
       inc i
 
   mainCamera.update(dt)
+  
+  if input.buttonDown(input.exit):
+    quit()
 
 proc render* () =
   if not generated:
